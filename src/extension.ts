@@ -1,5 +1,6 @@
 import * as vscode from 'vscode'
 import { CodeIndex } from './rag'
+import { AgentRunner } from './agent'
 
 type ContentPart = { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }
 interface Msg { role: 'system' | 'user' | 'assistant'; content: string | ContentPart[] }
@@ -44,9 +45,9 @@ function stripFences(s: string): string {
 }
 
 /** Chamada não-streaming ao modelo. Retorna o conteúdo (ou null). */
-async function chatOnce(
+export async function chatOnce(
   ctx: vscode.ExtensionContext,
-  messages: Msg[],
+  messages: Array<{ role: string; content: string | ContentPart[] }>,
   temperature = 0.2,
 ): Promise<string | null> {
   const c = cfg()
@@ -255,6 +256,37 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
     }
     const we = new vscode.WorkspaceEdit()
     we.replace(doc.uri, range, newText)
+    await vscode.workspace.applyEdit(we)
+    return true
+  }
+
+  /** Cria/sobrescreve um arquivo (usado pelo agente), com diff de revisão. */
+  async agentApplyFile(relPath: string, content: string): Promise<boolean> {
+    const root = vscode.workspace.workspaceFolders?.[0]
+    if (!root) return false
+    const uri = vscode.Uri.joinPath(root.uri, relPath)
+    let existing = ''
+    let isNew = false
+    try { existing = Buffer.from(await vscode.workspace.fs.readFile(uri)).toString('utf8') } catch { isNew = true }
+    if (cfg().reviewBeforeApply) {
+      const stamp = String(Date.now())
+      const l = vscode.Uri.parse(`${DIFF_SCHEME}:${relPath} (atual)`).with({ query: stamp + 'L' })
+      const r = vscode.Uri.parse(`${DIFF_SCHEME}:${relPath} (proposto)`).with({ query: stamp + 'R' })
+      diffContents.set(l.toString(), existing)
+      diffContents.set(r.toString(), content)
+      await vscode.commands.executeCommand('vscode.diff', l, r, `Mangaba (agente) — ${relPath}${isNew ? ' (novo)' : ''}`)
+      const pick = await vscode.window.showInformationMessage(`Aplicar ${relPath}?`, 'Aplicar', 'Pular')
+      diffContents.delete(l.toString()); diffContents.delete(r.toString())
+      if (pick !== 'Aplicar') return false
+      await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+    }
+    const we = new vscode.WorkspaceEdit()
+    if (isNew) {
+      we.createFile(uri, { overwrite: true, contents: Buffer.from(content, 'utf8') })
+    } else {
+      const doc = await vscode.workspace.openTextDocument(uri)
+      we.replace(uri, new vscode.Range(doc.positionAt(0), doc.positionAt(doc.getText().length)), content)
+    }
     await vscode.workspace.applyEdit(we)
     return true
   }
@@ -648,6 +680,25 @@ export function activate(ctx: vscode.ExtensionContext) {
     }),
     vscode.commands.registerCommand('mangaba.pickContext', () => provider.pickContext()),
     vscode.commands.registerCommand('mangaba.openHistory', () => provider.openHistory()),
+    vscode.commands.registerCommand('mangaba.agentLoop', async () => {
+      const root = vscode.workspace.workspaceFolders?.[0]
+      if (!root) { vscode.window.showWarningMessage('Abra uma pasta/projeto para o agente autônomo.'); return }
+      const task = await vscode.window.showInputBox({
+        prompt: 'Tarefa para o agente autônomo (ele lê/edita/roda e verifica)',
+        placeHolder: 'ex.: adicione validação de email e faça os testes passarem',
+      })
+      if (!task) return
+      const c = vscode.workspace.getConfiguration('mangaba')
+      const runner = new AgentRunner(
+        (messages) => chatOnce(ctx, messages, 0.2),
+        (p, content) => provider.agentApplyFile(p, content),
+        root.uri,
+        c.get<string>('testCommand') || '',
+        c.get<string>('commandApproval') || 'always',
+        c.get<number>('agentMaxSteps') || 12,
+      )
+      await runner.run(task)
+    }),
     vscode.commands.registerCommand('mangaba.indexProject', async () => {
       if (!vscode.workspace.workspaceFolders?.length) { vscode.window.showWarningMessage('Abra uma pasta/projeto para indexar.'); return }
       await vscode.window.withProgress(

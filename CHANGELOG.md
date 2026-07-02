@@ -2,6 +2,9 @@
 
 Todas as mudanças relevantes da extensão **Mangaba AI para VS Code**.
 
+## [0.10.0]
+- **Agente autônomo (laço agêntico)** — lê/edita arquivos, **executa comandos no terminal com aprovação** e **auto-verifica** (roda testes e corrige) até concluir. Comando *Agente autônomo*; configs `commandApproval`, `testCommand`, `agentMaxSteps`.
+
 ## [0.9.1]
 - **Backend de embeddings configurável** — `transformers` (embutido, self-contained) ou `ollama` (HTTP, vsix leve ~100KB e multiplataforma). Workflow de CI para empacotamento por plataforma do build self-contained.
 

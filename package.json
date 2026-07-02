@@ -2,7 +2,7 @@
   "name": "mangaba-ai",
   "displayName": "Mangaba AI",
   "description": "Chat com a IA brasileira e soberana Mangaba, dentro do VS Code — powered pelos modelos self-hosted (OpenAI-compatível).",
-  "version": "0.9.1",
+  "version": "0.10.0",
   "publisher": "mangaba",
   "icon": "media/icon-128.png",
   "license": "MIT",
@@ -121,6 +121,12 @@
         "title": "Indexar projeto (RAG @codebase)",
         "category": "Mangaba AI",
         "icon": "$(database)"
+      },
+      {
+        "command": "mangaba.agentLoop",
+        "title": "Agente autônomo (tarefa)",
+        "category": "Mangaba AI",
+        "icon": "$(run-all)"
       }
     ],
     "keybindings": [
@@ -284,6 +290,34 @@
           "default": "nomic-embed-text",
           "markdownDescription": "Modelo de embedding do Ollama.",
           "order": 13
+        },
+        "mangaba.commandApproval": {
+          "type": "string",
+          "enum": [
+            "always",
+            "never"
+          ],
+          "default": "always",
+          "enumDescriptions": [
+            "Pede aprovação a cada comando (recomendado)",
+            "Roda comandos sem perguntar (cuidado)"
+          ],
+          "markdownDescription": "Aprovação de comandos de terminal do **agente autônomo**.",
+          "order": 14
+        },
+        "mangaba.testCommand": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Comando de teste sugerido ao agente (ex.: `npm test`, `pytest`). Ajuda a auto-verificação.",
+          "order": 15
+        },
+        "mangaba.agentMaxSteps": {
+          "type": "number",
+          "default": 12,
+          "minimum": 1,
+          "maximum": 40,
+          "markdownDescription": "Máximo de passos do laço agêntico.",
+          "order": 16
         }
       }
     },
