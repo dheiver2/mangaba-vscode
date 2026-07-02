@@ -102,34 +102,49 @@ body {
   font-size: 12px; line-height: 1; display: flex; align-items: center; justify-content: center;
 }
 
-/* composer */
+/* composer — pílula única (estilo ChatGPT/Copilot) */
 .composer {
-  display: flex; gap: 8px; align-items: flex-end;
-  padding: 10px; border-top: 1px solid var(--vscode-panel-border, rgba(128,128,128,.25));
-}
-.attach-btn {
-  flex-shrink: 0; width: 34px; height: 34px; border-radius: 10px; cursor: pointer;
-  background: transparent; border: 1px solid var(--vscode-input-border, rgba(128,128,128,.3));
-  font-size: 15px; line-height: 1;
-}
-.attach-btn:hover { border-color: var(--mangaba); }
-#input {
-  flex: 1; resize: none; max-height: 160px;
-  padding: 8px 10px; border-radius: 10px;
-  color: var(--vscode-input-foreground);
+  display: flex; align-items: flex-end; gap: 4px;
+  margin: 10px; padding: 5px 6px;
+  border-radius: 14px;
   background: var(--vscode-input-background);
   border: 1px solid var(--vscode-input-border, rgba(128,128,128,.3));
-  font-family: inherit; font-size: inherit; line-height: 1.4;
+  transition: border-color .15s ease, box-shadow .15s ease;
 }
-#input:focus { outline: none; border-color: var(--mangaba); }
-#send {
-  flex-shrink: 0; width: 34px; height: 34px; border: none; cursor: pointer;
-  border-radius: 10px; color: #fff; background: var(--mangaba);
-  font-size: 15px; transition: transform .1s ease, background .15s ease;
+.composer:focus-within {
+  border-color: var(--mangaba);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--mangaba) 22%, transparent);
 }
-#send:hover { background: var(--mangaba-dim); }
-#send:active { transform: scale(0.94); }
+#input {
+  flex: 1; resize: none; max-height: 168px; min-height: 22px;
+  padding: 5px 4px; border: none; outline: none; background: transparent;
+  color: var(--vscode-input-foreground);
+  font-family: inherit; font-size: inherit; line-height: 1.45;
+}
+#input::placeholder { color: var(--vscode-input-placeholderForeground, rgba(128,128,128,.7)); }
+
+/* botão-ícone fantasma (anexar) */
+.icon-btn {
+  flex-shrink: 0; width: 30px; height: 30px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: none; border-radius: 8px; cursor: pointer;
+  background: transparent; color: var(--vscode-foreground); opacity: .65;
+}
+.icon-btn:hover { opacity: 1; background: var(--vscode-toolbar-hoverBackground, rgba(128,128,128,.16)); }
+.icon-btn svg { width: 17px; height: 17px; }
+
+/* botão enviar — círculo laranja */
+.send-btn {
+  flex-shrink: 0; width: 30px; height: 30px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: none; border-radius: 9px; cursor: pointer;
+  background: var(--mangaba); color: #fff;
+  transition: background .15s ease, transform .1s ease;
+}
+.send-btn:hover { background: var(--mangaba-dim); }
+.send-btn:active { transform: scale(0.92); }
+.send-btn svg { width: 16px; height: 16px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .dots i, #send { animation: none !important; transition: none !important; }
+  .dots i, .send-btn, .composer { animation: none !important; transition: none !important; }
 }

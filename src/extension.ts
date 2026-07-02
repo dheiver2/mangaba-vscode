@@ -172,9 +172,11 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
   </div>
   <div id="attachments" class="attachments"></div>
   <form id="composer" class="composer">
-    <button id="attach" type="button" class="attach-btn" title="Anexar imagem (use o modelo mangaba-vision-q8)" aria-label="Anexar imagem">🖼️</button>
-    <textarea id="input" rows="1" placeholder="Pergunte à Mangaba…  (Enter envia, Shift+Enter quebra linha)"></textarea>
-    <button id="send" type="submit" title="Enviar" aria-label="Enviar">➤</button>
+    <button id="attach" type="button" class="icon-btn" title="Anexar imagem (use o modelo mangaba-vision-q8)" aria-label="Anexar imagem">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.5 2A1.5 1.5 0 0 0 1 3.5v9A1.5 1.5 0 0 0 2.5 14h11a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 13.5 2h-11Zm0 1h11a.5.5 0 0 1 .5.5v6.29l-2.4-2.4a.75.75 0 0 0-1.06 0L7.5 10.94 5.96 9.4a.75.75 0 0 0-1.06 0L2 12.3V3.5a.5.5 0 0 1 .5-.5Zm3 1.75A1.25 1.25 0 1 0 5.5 7.25 1.25 1.25 0 0 0 5.5 4.75Z"/></svg>
+    </button>
+    <textarea id="input" rows="1" placeholder="Pergunte à Mangaba…"></textarea>
+    <button id="send" type="submit" class="send-btn" title="Enviar" aria-label="Enviar"></button>
   </form>
   <input id="file" type="file" accept="image/*" hidden />
   <script nonce="${nonce}" src="${scriptUri}"></script>

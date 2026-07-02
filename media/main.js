@@ -114,12 +114,16 @@
     return bubble
   }
 
+  var SEND_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5a.75.75 0 0 1 .53.22l4.5 4.5a.75.75 0 1 1-1.06 1.06L8.75 4.56V14a.75.75 0 0 1-1.5 0V4.56L4.03 7.28a.75.75 0 0 1-1.06-1.06l4.5-4.5A.75.75 0 0 1 8 1.5Z"/></svg>'
+  var STOP_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="4" y="4" width="8" height="8" rx="1.5" fill="currentColor"/></svg>'
+
   function setStreaming(on) {
     streaming = on
-    $send.textContent = on ? '■' : '➤'
+    $send.innerHTML = on ? STOP_SVG : SEND_SVG
     $send.title = on ? 'Parar' : 'Enviar'
     $input.disabled = false
   }
+  setStreaming(false)
 
   function send(text) {
     const txt = (text ?? $input.value).trim()
