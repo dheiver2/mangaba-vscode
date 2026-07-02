@@ -118,8 +118,10 @@
       curEl = null
     } else if (m.type === 'clear') {
       history = [SYSTEM]
+      const logo = document.body.dataset.logo || ''
       $messages.innerHTML =
-        '<div class="empty"><div class="logo">🥭</div><p><strong>Mangaba AI</strong></p>' +
+        '<div class="empty">' +
+        (logo ? '<img class="logo-img" src="' + logo + '" alt="Mangaba AI" />' : '') +
         '<p class="hint">Nova conversa.</p></div>'
       setStreaming(false)
       curEl = null

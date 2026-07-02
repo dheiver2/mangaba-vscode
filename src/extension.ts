@@ -111,6 +111,7 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
     const nonce = getNonce()
     const scriptUri = wv.asWebviewUri(vscode.Uri.joinPath(this.ctx.extensionUri, 'media', 'main.js'))
     const styleUri  = wv.asWebviewUri(vscode.Uri.joinPath(this.ctx.extensionUri, 'media', 'main.css'))
+    const logoUri   = wv.asWebviewUri(vscode.Uri.joinPath(this.ctx.extensionUri, 'media', 'logo.svg'))
     const csp = [
       `default-src 'none'`,
       `img-src ${wv.cspSource} data:`,
@@ -126,11 +127,10 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="${styleUri}" rel="stylesheet" />
 </head>
-<body>
+<body data-logo="${logoUri}">
   <div id="messages" class="messages">
     <div class="empty">
-      <div class="logo">🥭</div>
-      <p><strong>Mangaba AI</strong></p>
+      <img class="logo-img" src="${logoUri}" alt="Mangaba AI" />
       <p class="hint">IA brasileira e soberana, dentro do seu editor.</p>
     </div>
   </div>
