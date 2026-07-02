@@ -69,6 +69,12 @@
         "icon": "$(add)"
       },
       {
+        "command": "mangaba.exportChat",
+        "title": "Exportar conversa (Markdown)",
+        "category": "Mangaba AI",
+        "icon": "$(export)"
+      },
+      {
         "command": "mangaba.explainSelection",
         "title": "Explicar seleção",
         "category": "Mangaba AI",

@@ -119,7 +119,7 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
     this.view = view
     view.webview.options = { enableScripts: true, localResourceRoots: [this.ctx.extensionUri] }
     view.webview.html = this.html(view.webview)
-    view.webview.onDidReceiveMessage(async (m: { type: string; history?: Msg[]; model?: string; code?: string; mode?: string; id?: string; title?: string; name?: string; data?: string }) => {
+    view.webview.onDidReceiveMessage(async (m: { type: string; history?: Msg[]; model?: string; code?: string; mode?: string; id?: string; title?: string; name?: string; data?: string; lang?: string }) => {
       if (m.type === 'send' && m.history) await this.stream(m.history)
       else if (m.type === 'stop') this.abort?.abort()
       else if (m.type === 'getModels') await this.sendModels()
@@ -129,6 +129,8 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
       else if (m.type === 'pickContext') await this.pickContext()
       else if (m.type === 'attachFiles') await this.attachFiles()
       else if (m.type === 'analyzeUpload' && m.name && typeof m.data === 'string') await this.analyzeUpload(m.name, m.data)
+      else if (m.type === 'exportMarkdown' && typeof m.data === 'string') await this.openDoc(m.data, 'markdown')
+      else if (m.type === 'openAttachment' && typeof m.data === 'string') await this.openDoc(m.data, m.lang || 'plaintext')
       else if (m.type === 'save' && m.id && m.history) this.saveConversation(m.id, m.title || 'Conversa', m.history)
       else if (m.type === 'openHistory') await this.openHistory()
     })
@@ -462,6 +464,13 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
 
   focusNew() { this.reveal(); this.view?.webview.postMessage({ type: 'clear' }) }
   sendPrompt(text: string) { this.reveal(); this.view?.webview.postMessage({ type: 'prompt', text }) }
+  requestExport() { this.reveal(); this.view?.webview.postMessage({ type: 'requestExport' }) }
+
+  /** Abre conteúdo num documento novo (sem salvar) — usado por exportar/preview. */
+  private async openDoc(content: string, language: string) {
+    const doc = await vscode.workspace.openTextDocument({ content, language })
+    await vscode.window.showTextDocument(doc, { preview: false })
+  }
   private reveal() {
     this.view?.show?.(true)
     vscode.commands.executeCommand('mangaba.chatView.focus')
@@ -651,9 +660,14 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
       }
       wv.postMessage({ type: 'done' })
     } catch (e) {
-      const err = e as { name?: string; message?: string }
+      const err = e as { name?: string; message?: string; cause?: { code?: string } }
       if (err?.name === 'AbortError') { wv.postMessage({ type: 'done' }); return }
-      wv.postMessage({ type: 'error', error: err?.message ?? String(e) })
+      const code = err?.cause?.code || ''
+      const offline = /ECONNREFUSED|ENOTFOUND|EAI_AGAIN|ETIMEDOUT|fetch failed/i.test(code + ' ' + (err?.message || ''))
+      const msg = offline
+        ? `Servidor Mangaba indisponível — não foi possível conectar a ${c.baseUrl}. Verifique se o servidor está no ar.`
+        : (err?.message ?? String(e))
+      wv.postMessage({ type: 'error', error: msg })
     }
   }
 
@@ -682,6 +696,12 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
   <header class="topbar">
     <span class="brand">Mangaba</span>
     <select id="model" class="model-select" title="Escolher modelo"><option>carregando…</option></select>
+    <button id="newchat" class="icon-btn" title="Nova conversa" aria-label="Nova conversa">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8.75 2.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z"/></svg>
+    </button>
+    <button id="export" class="icon-btn" title="Exportar conversa (Markdown)" aria-label="Exportar conversa">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5a.75.75 0 0 1 .75.75v6.44l2.22-2.22a.75.75 0 1 1 1.06 1.06l-3.5 3.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 1 1 1.06-1.06l2.22 2.22V2.25A.75.75 0 0 1 8 1.5ZM2.75 12a.75.75 0 0 1 .75.75v.75h9v-.75a.75.75 0 0 1 1.5 0v1.5a.75.75 0 0 1-.75.75h-10.5a.75.75 0 0 1-.75-.75v-1.5A.75.75 0 0 1 2.75 12Z"/></svg>
+    </button>
     <button id="history" class="icon-btn" title="Conversas salvas" aria-label="Conversas salvas">
       <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2 3.5h12V5H2zM2 7.25h12v1.5H2zM2 11h12v1.5H2z"/></svg>
     </button>
@@ -694,6 +714,7 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
   </div>
   <div id="ctxbar" class="ctxbar"></div>
   <div id="attachments" class="attachments"></div>
+  <div id="slashmenu" class="slashmenu" hidden></div>
   <form id="composer" class="composer">
     <button id="ctxbtn" type="button" class="icon-btn" title="Adicionar contexto (@): arquivo, seleção, erros" aria-label="Adicionar contexto">
       <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1a7 7 0 1 0 3.2 13.23.75.75 0 1 0-.68-1.34A5.5 5.5 0 1 1 13.5 8c0 .78-.16 1.25-.4 1.5-.22.24-.53.37-.85.37-.31 0-.5-.1-.62-.25-.13-.17-.13-.4-.13-.62V5.25a.75.75 0 0 0-1.42-.34A3 3 0 1 0 10.6 9.7c.1.2.24.38.42.53.4.34.94.51 1.43.51.7 0 1.4-.28 1.92-.83.53-.57.88-1.4.88-2.41A7 7 0 0 0 8 1Zm0 8.5A1.5 1.5 0 1 1 8 6.5a1.5 1.5 0 0 1 0 3Z"/></svg>
@@ -701,9 +722,10 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
     <button id="attach" type="button" class="icon-btn" title="Anexar arquivo (código, texto, PDF, imagem)" aria-label="Anexar arquivo">
       <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M9.6 3.16 4.7 8.05a2.5 2.5 0 0 0 3.54 3.54l5.3-5.3a.75.75 0 1 1 1.06 1.06l-5.3 5.3a4 4 0 0 1-5.66-5.66l4.9-4.89a2.75 2.75 0 0 1 3.89 3.89l-4.9 4.89a1.5 1.5 0 0 1-2.12-2.12l4.54-4.54a.75.75 0 1 1 1.06 1.06L6.97 9.81a.001.001 0 0 0 0 .01.001.001 0 0 0 .01 0l4.9-4.9a1.25 1.25 0 0 0-1.77-1.77Z"/></svg>
     </button>
-    <textarea id="input" rows="1" placeholder="Pergunte à Mangaba… (arraste arquivos aqui)"></textarea>
+    <textarea id="input" rows="1" placeholder="Pergunte à Mangaba…  ( / comandos · arraste arquivos )"></textarea>
     <button id="send" type="submit" class="send-btn" title="Enviar" aria-label="Enviar"></button>
   </form>
+  <div id="foot" class="foot"><span id="tokens" class="tokens"></span><span class="foot-hint">Enter envia · Shift+Enter nova linha · Esc interrompe</span></div>
   <input id="file" type="file" multiple hidden />
   <script nonce="${nonce}" src="${hljsUri}"></script>
   <script nonce="${nonce}" src="${scriptUri}"></script>
@@ -778,6 +800,35 @@ export function activate(ctx: vscode.ExtensionContext) {
   const mcp = new McpManager()
   ctx.subscriptions.push({ dispose: () => mcp.dispose() })
 
+  // Status bar: conexão ao servidor + modelo atual (clique abre o chat).
+  const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100)
+  status.command = 'mangaba.openChat'
+  status.text = '$(sync~spin) Mangaba'
+  status.show()
+  ctx.subscriptions.push(status)
+  const refreshStatus = async () => {
+    const c = cfg()
+    const model = currentModel(ctx)
+    const warn = new vscode.ThemeColor('statusBarItem.warningBackground')
+    try {
+      const ctl = new AbortController()
+      const t = setTimeout(() => ctl.abort(), 4500)
+      const res = await fetch(`${c.baseUrl}/models`, { headers: authHeaders(c), signal: ctl.signal })
+      clearTimeout(t)
+      if (res.ok) { status.text = '$(sparkle) Mangaba'; status.tooltip = `Conectado · ${model}\n${c.baseUrl}`; status.backgroundColor = undefined }
+      else { status.text = '$(error) Mangaba'; status.tooltip = `HTTP ${res.status} · ${c.baseUrl}`; status.backgroundColor = warn }
+    } catch {
+      status.text = '$(error) Mangaba'; status.tooltip = `Servidor offline · ${c.baseUrl}`
+      status.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground')
+    }
+  }
+  refreshStatus()
+  const statusIv = setInterval(refreshStatus, 45000)
+  ctx.subscriptions.push(
+    { dispose: () => clearInterval(statusIv) },
+    vscode.workspace.onDidChangeConfiguration((e) => { if (e.affectsConfiguration('mangaba')) refreshStatus() }),
+  )
+
   ctx.subscriptions.push(
     vscode.window.registerWebviewViewProvider(MangabaViewProvider.viewType, provider, {
       webviewOptions: { retainContextWhenHidden: true },
@@ -791,6 +842,7 @@ export function activate(ctx: vscode.ExtensionContext) {
     vscode.commands.registerCommand('mangaba.openChat', () =>
       vscode.commands.executeCommand('mangaba.chatView.focus')),
     vscode.commands.registerCommand('mangaba.newChat', () => provider.focusNew()),
+    vscode.commands.registerCommand('mangaba.exportChat', () => provider.requestExport()),
     vscode.commands.registerCommand('mangaba.explainSelection', () => {
       const ed = vscode.window.activeTextEditor
       if (!ed) { vscode.window.showInformationMessage('Abra um arquivo e selecione um trecho.'); return }

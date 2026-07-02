@@ -26,7 +26,7 @@ Copilot, Cursor e Cody são excelentes — mas mandam seu código para servidore
 
 | Categoria | O que faz |
 | --- | --- |
-| **Chat** | Painel na Activity Bar com streaming, markdown e **syntax highlighting**; seletor de modelo ao vivo; histórico de conversas. |
+| **Chat** | Painel na Activity Bar com streaming, markdown e **syntax highlighting**; seletor de modelo ao vivo; histórico de conversas. **Regenerar/editar/copiar** mensagens, **comandos `/`**, **exportar em Markdown**, contador de tokens e **status do servidor** na barra inferior. |
 | **Anexos & análise de arquivos** | **Arraste, cole ou anexe** qualquer arquivo — código, texto, JSON/CSV, logs, **PDF** (texto extraído automaticamente) e **imagens** (visão). Vários de uma vez, com chips por tipo. |
 | **Editar código** | Botões **Aplicar / Inserir / Copiar** em cada bloco; **diff de revisão** antes de aplicar; **Editar seleção** por instrução (`Ctrl/Cmd+Alt+K`). |
 | **Agente autônomo** | Planeja, lê, edita, **roda comandos no terminal (com aprovação)** e **verifica rodando os testes** — em laço, com **checkpoints/rollback**. |
@@ -116,6 +116,9 @@ Conecte servidores **Model Context Protocol** e o agente usa as ferramentas dele
 | Agente autônomo · Tarefa no projeto · Indexar projeto | Paleta de comandos |
 | Gerar testes · Corrigir erros com IA · Gerar mensagem de commit | Menu de contexto / SCM / lâmpada |
 | Autocompletar inline | `Alt+\` (opt-in) |
+| Nova conversa · Exportar conversa (Markdown) | Botões no topo do painel |
+| Comandos de barra no chat (`/explain`, `/tests`, `/doc`, `/refactor`, `/fix`, `/export`, `/clear`) | Digite `/` no campo |
+| Enviar · Nova linha · Interromper · Editar última mensagem | `Enter` · `Shift+Enter` · `Esc` · `↑` (campo vazio) |
 
 ---
 

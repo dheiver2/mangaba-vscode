@@ -28,6 +28,11 @@ export function chunkText(text: string, size = 900, overlap = 150): string[] {
   return out.length ? out : [text]
 }
 
+/** Estimativa grosseira de tokens (~4 chars/token, média PT/código). */
+export function estimateTokens(text: string): number {
+  return text ? Math.ceil(text.length / 4) : 0
+}
+
 /** Linguagem (para o bloco ```lang) a partir da extensão do arquivo. */
 export function langFromExt(ext: string): string {
   const map: Record<string, string> = {

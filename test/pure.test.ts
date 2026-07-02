@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { stripFences, parseAction, chunkText, langFromExt, pdfStreamToText } from '../src/pure'
+import { stripFences, parseAction, chunkText, langFromExt, pdfStreamToText, estimateTokens } from '../src/pure'
 
 test('stripFences: remove cerca com linguagem', () => {
   assert.equal(stripFences('```ts\nconst x = 1\n```'), 'const x = 1')
@@ -55,6 +55,12 @@ test('chunkText: respeita tamanho e sobreposição', () => {
 
 test('chunkText: string vazia não trava (retorna [""])', () => {
   assert.deepEqual(chunkText('', 900, 150), [''])
+})
+
+test('estimateTokens: vazio é 0; ~4 chars/token', () => {
+  assert.equal(estimateTokens(''), 0)
+  assert.equal(estimateTokens('abcd'), 1)
+  assert.equal(estimateTokens('a'.repeat(400)), 100)
 })
 
 test('langFromExt: mapeia extensões comuns', () => {

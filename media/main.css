@@ -250,3 +250,46 @@ body {
   border-color: color-mix(in srgb, var(--vscode-foreground) 22%, transparent);
   color: var(--vscode-foreground);
 }
+
+/* ── Barra de ações da mensagem (Copiar / Regenerar / Editar) ───────────── */
+.msg-tools {
+  display: flex; gap: 4px; margin-top: 4px;
+  opacity: 0; transition: opacity .12s ease;
+}
+.msg:hover .msg-tools, .msg:focus-within .msg-tools { opacity: 1; }
+.msg.user .msg-tools { justify-content: flex-end; }
+.mtool {
+  border: none; background: transparent; cursor: pointer;
+  font: inherit; font-size: 11px; line-height: 1;
+  padding: 3px 7px; border-radius: 6px;
+  color: var(--vscode-descriptionForeground);
+}
+.mtool:hover { background: var(--vscode-toolbar-hoverBackground, rgba(128,128,128,.18)); color: var(--vscode-foreground); }
+.mtool.regen:hover, .mtool.retry:hover { color: var(--mangaba); }
+
+/* ── Menu de comandos ( / ) ─────────────────────────────────────────────── */
+.slashmenu {
+  margin: 0 10px 4px; padding: 4px;
+  border-radius: 10px;
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-panel-border, rgba(128,128,128,.3));
+  box-shadow: 0 4px 16px rgba(0,0,0,.28);
+  max-height: 220px; overflow-y: auto;
+}
+.slash-item {
+  display: flex; align-items: baseline; gap: 8px;
+  padding: 6px 8px; border-radius: 7px; cursor: pointer;
+}
+.slash-item b { color: var(--mangaba); font-size: 12.5px; min-width: 74px; }
+.slash-item span { font-size: 11.5px; opacity: .8; }
+.slash-item.sel, .slash-item:hover { background: color-mix(in srgb, var(--mangaba) 14%, transparent); }
+
+/* ── Rodapé do composer (tokens + dica) ─────────────────────────────────── */
+.foot {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; padding: 0 14px 8px; margin-top: -4px;
+  font-size: 10.5px; color: var(--vscode-descriptionForeground);
+}
+.tokens { font-variant-numeric: tabular-nums; }
+.tokens.warn { color: var(--vscode-editorWarning-foreground, #e2a336); font-weight: 600; }
+.foot-hint { opacity: .7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

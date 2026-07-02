@@ -25,6 +25,21 @@
   // Pede o contexto do editor (arquivo/seleção) ao host.
   vscode.postMessage({ type: 'getContext' })
 
+  // Barra de ações da mensagem (delegação): Copiar / Regenerar / Editar.
+  $messages.addEventListener('click', (e) => {
+    const mt = e.target && e.target.closest ? e.target.closest('.mtool') : null
+    if (mt) {
+      const act = mt.dataset.act
+      if (act === 'copy') {
+        const b = mt.closest('.msg').querySelector('.bubble')
+        if (b && navigator.clipboard) navigator.clipboard.writeText(b.innerText)
+        flash(mt, 'Copiado', 'Copiar')
+      } else if (act === 'regen' || act === 'retry') { regenerate() }
+      else if (act === 'edit') { editLast() }
+      return
+    }
+  })
+
   // Botões dos blocos de código (delegação): Aplicar / Inserir / Copiar.
   $messages.addEventListener('click', (e) => {
     const btn = e.target && e.target.closest ? e.target.closest('.code-act') : null
@@ -46,8 +61,14 @@
   // Histórico + @-contexto
   const $history = document.getElementById('history')
   const $ctxbtn = document.getElementById('ctxbtn')
+  const $newchat = document.getElementById('newchat')
+  const $export = document.getElementById('export')
+  const $slash = document.getElementById('slashmenu')
+  const $tokens = document.getElementById('tokens')
   $history.addEventListener('click', () => vscode.postMessage({ type: 'openHistory' }))
   $ctxbtn.addEventListener('click', () => vscode.postMessage({ type: 'pickContext' }))
+  $newchat.addEventListener('click', () => resetChat())
+  $export.addEventListener('click', () => exportMarkdown())
 
   function newId() { return 'c-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7) }
   let convId = newId()
@@ -78,6 +99,7 @@
     if (history.filter((m) => m.role !== 'system').length === 0) {
       $messages.innerHTML = '<div class="empty"><img class="logo-img" src="' + (document.body.dataset.logo || '') + '" alt="Mangaba AI" /><p class="hint">Nova conversa.</p></div>'
     }
+    decorateLast()
   }
 
   // Pede ao host a lista de modelos do servidor Mangaba (/v1/models).
@@ -150,7 +172,12 @@
         '<span class="att-meta"><span class="att-name">' + escapeHtml(a.name) + '</span>' +
         (a.note ? '<span class="att-sub">' + escapeHtml(a.note) + '</span>' : '') + '</span>' +
         '<button class="att-x" title="Remover" aria-label="Remover">×</button>'
-      chip.querySelector('.att-x').addEventListener('click', () => { pendingAtts.splice(idx, 1); renderAttachment() })
+      chip.querySelector('.att-x').addEventListener('click', () => { pendingAtts.splice(idx, 1); renderAttachment(); updateTokens() })
+      if (a.kind === 'text' && a.text) {
+        const meta = chip.querySelector('.att-meta')
+        meta.style.cursor = 'pointer'; meta.title = 'Pré-visualizar conteúdo'
+        meta.addEventListener('click', () => vscode.postMessage({ type: 'openAttachment', name: a.name, lang: a.lang, data: a.text }))
+      }
       $attachments.appendChild(chip)
     })
   }
@@ -259,10 +286,34 @@
     bubble.className = 'bubble'
     bubble.innerHTML = contentToHtml(content)
     el.appendChild(bubble)
+    const tools = document.createElement('div')
+    tools.className = 'msg-tools'
+    tools.innerHTML = '<button class="mtool copy" data-act="copy" title="Copiar">Copiar</button>'
+    el.appendChild(tools)
     $messages.appendChild(el)
     highlightIn(bubble)
     $messages.scrollTop = $messages.scrollHeight
     return bubble
+  }
+
+  // Decora as últimas mensagens: Regenerar (assistente) e Editar (usuário).
+  function decorateLast() {
+    $messages.querySelectorAll('.mtool.regen, .mtool.edit').forEach((b) => b.remove())
+    if (streaming) return
+    let lastA = null, lastU = null
+    $messages.querySelectorAll('.msg').forEach((el) => {
+      if (el.classList.contains('assistant')) lastA = el
+      if (el.classList.contains('user')) lastU = el
+    })
+    if (lastA) addTool(lastA, 'regen', 'Regenerar')
+    if (lastU) addTool(lastU, 'edit', 'Editar')
+  }
+  function addTool(msgEl, act, label) {
+    const tools = msgEl.querySelector('.msg-tools')
+    if (!tools) return
+    const b = document.createElement('button')
+    b.className = 'mtool ' + act; b.dataset.act = act; b.textContent = label
+    tools.appendChild(b)
   }
 
   var SEND_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5a.75.75 0 0 1 .53.22l4.5 4.5a.75.75 0 1 1-1.06 1.06L8.75 4.56V14a.75.75 0 0 1-1.5 0V4.56L4.03 7.28a.75.75 0 0 1-1.06-1.06l4.5-4.5A.75.75 0 0 1 8 1.5Z"/></svg>'
@@ -275,6 +326,7 @@
     $input.disabled = false
   }
   setStreaming(false)
+  updateTokens()
 
   function send(text) {
     const txt = (text ?? $input.value).trim()
@@ -297,6 +349,7 @@
     curEl = addMessage('assistant', '')
     curEl.innerHTML = '<span class="dots"><i></i><i></i><i></i></span>'
     setStreaming(true)
+    hideSlash(); updateTokens()
     vscode.postMessage({ type: 'send', history: history.slice(0, -1) })
   }
 
@@ -310,10 +363,116 @@
     if (streaming) { vscode.postMessage({ type: 'stop' }); return }
     send()
   })
-  $input.addEventListener('input', autoresize)
+  $input.addEventListener('input', () => { autoresize(); slashIdx = 0; updateSlash(); updateTokens() })
   $input.addEventListener('keydown', (e) => {
+    if (!$slash.hidden) {
+      const items = JSON.parse($slash.dataset.items || '[]')
+      if (e.key === 'ArrowDown') { e.preventDefault(); slashIdx = (slashIdx + 1) % items.length; updateSlash(); return }
+      if (e.key === 'ArrowUp') { e.preventDefault(); slashIdx = (slashIdx - 1 + items.length) % items.length; updateSlash(); return }
+      if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); applySlash(items[slashIdx]); return }
+      if (e.key === 'Escape') { e.preventDefault(); hideSlash(); return }
+    }
+    if (e.key === 'Escape' && streaming) { e.preventDefault(); vscode.postMessage({ type: 'stop' }); return }
+    if (e.key === 'ArrowUp' && !$input.value && !streaming) { e.preventDefault(); editLast(); return }
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
   })
+
+  // ── Comandos de barra (/) ────────────────────────────────────────────────
+  const SLASH = [
+    { c: '/explain', d: 'Explicar o arquivo/seleção atual', p: 'Explique o código do arquivo atual de forma objetiva, em português.' },
+    { c: '/tests', d: 'Gerar testes', p: 'Gere testes para o código do arquivo atual.' },
+    { c: '/doc', d: 'Documentar o código', p: 'Documente o código do arquivo atual com comentários claros, em português.' },
+    { c: '/refactor', d: 'Refatorar mantendo o comportamento', p: 'Refatore o código do arquivo atual melhorando a legibilidade e mantendo o comportamento.' },
+    { c: '/fix', d: 'Corrigir problemas do arquivo', p: 'Corrija os problemas/erros do arquivo atual e explique as mudanças.' },
+    { c: '/export', d: 'Exportar conversa (Markdown)', a: 'export' },
+    { c: '/clear', d: 'Nova conversa', a: 'clear' },
+  ]
+  let slashIdx = 0
+  function updateSlash() {
+    const v = $input.value
+    if (v[0] !== '/' || /\s/.test(v)) { hideSlash(); return }
+    const items = SLASH.filter((s) => s.c.startsWith(v.toLowerCase()))
+    if (!items.length) { hideSlash(); return }
+    if (slashIdx >= items.length) slashIdx = items.length - 1
+    $slash.innerHTML = items.map((s, i) =>
+      '<div class="slash-item' + (i === slashIdx ? ' sel' : '') + '" data-cmd="' + s.c + '"><b>' + s.c + '</b><span>' + escapeHtml(s.d) + '</span></div>').join('')
+    $slash.dataset.items = JSON.stringify(items.map((s) => s.c))
+    $slash.hidden = false
+  }
+  function hideSlash() { $slash.hidden = true; slashIdx = 0 }
+  function applySlash(cmd) {
+    const s = SLASH.find((x) => x.c === cmd); if (!s) return
+    hideSlash()
+    if (s.a === 'export') { $input.value = ''; updateTokens(); exportMarkdown(); return }
+    if (s.a === 'clear') { $input.value = ''; resetChat(); return }
+    $input.value = s.p; autoresize(); $input.focus(); updateTokens()
+  }
+  $slash.addEventListener('click', (e) => {
+    const it = e.target.closest ? e.target.closest('.slash-item') : null
+    if (it) applySlash(it.dataset.cmd)
+  })
+
+  // ── Nova conversa / exportar / regenerar / editar / tokens ───────────────
+  function resetChat() {
+    history = [SYSTEM]
+    convId = newId()
+    refChips = []
+    pendingAtts = []
+    renderCtxbar(); renderAttachment(); hideSlash()
+    const logo = document.body.dataset.logo || ''
+    $messages.innerHTML = '<div class="empty">' + (logo ? '<img class="logo-img" src="' + logo + '" alt="Mangaba AI" />' : '') + '<p class="hint">Nova conversa.</p></div>'
+    $input.value = ''; setStreaming(false); curEl = null; autoresize(); updateTokens()
+  }
+
+  function msgText(content) {
+    if (typeof content === 'string') return content
+    return content.map((p) => p.type === 'text' ? p.text
+      : p.type === 'file' ? '`[' + p.kind + '] ' + p.name + '`'
+      : p.type === 'image_url' ? '`[imagem]`' : '').filter(Boolean).join('\n\n')
+  }
+  function exportMarkdown() {
+    const lines = ['# Conversa Mangaba AI', '']
+    for (const m of history) {
+      if (m.role === 'system') continue
+      lines.push(m.role === 'user' ? '### Você' : '### Mangaba', '', msgText(m.content), '')
+    }
+    if (lines.length <= 2) return
+    vscode.postMessage({ type: 'exportMarkdown', data: lines.join('\n') })
+  }
+
+  function regenerate() {
+    if (streaming) return
+    while (history.length && history[history.length - 1].role === 'assistant') history.pop()
+    const lastUser = history[history.length - 1]
+    if (!lastUser || lastUser.role !== 'user') return
+    renderHistory()
+    history.push({ role: 'assistant', content: '' })
+    curEl = addMessage('assistant', '')
+    curEl.innerHTML = '<span class="dots"><i></i><i></i><i></i></span>'
+    setStreaming(true)
+    vscode.postMessage({ type: 'send', history: history.slice(0, -1) })
+    updateTokens()
+  }
+  function editLast() {
+    if (streaming) return
+    let i = history.length - 1
+    while (i >= 0 && history[i].role !== 'user') i--
+    if (i < 0) return
+    const text = msgText(history[i].content)
+    history = history.slice(0, i)
+    renderHistory(); decorateLast()
+    $input.value = text; autoresize(); $input.focus(); updateTokens()
+  }
+
+  function estTok(s) { return s ? Math.ceil(s.length / 4) : 0 }
+  function updateTokens() {
+    let t = estTok($input.value)
+    for (const a of pendingAtts) t += estTok(a.text || '') + 4
+    for (const m of history) { if (m.role !== 'system') t += estTok(msgText(m.content)) }
+    if (!t) { $tokens.textContent = ''; $tokens.classList.remove('warn'); return }
+    $tokens.textContent = '~' + (t >= 1000 ? (t / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(t)) + ' tokens'
+    $tokens.classList.toggle('warn', t > 6000)
+  }
 
   window.addEventListener('message', (event) => {
     const m = event.data
@@ -326,6 +485,7 @@
       if (curEl) highlightIn(curEl)
       setStreaming(false)
       curEl = null
+      decorateLast(); updateTokens()
       persist()
     } else if (m.type === 'error') {
       const last = history[history.length - 1]
@@ -337,18 +497,11 @@
       }
       setStreaming(false)
       curEl = null
+      decorateLast() // o botão "Regenerar" na última resposta serve de retry
     } else if (m.type === 'clear') {
-      history = [SYSTEM]
-      convId = newId()
-      refChips = []
-      renderCtxbar()
-      const logo = document.body.dataset.logo || ''
-      $messages.innerHTML =
-        '<div class="empty">' +
-        (logo ? '<img class="logo-img" src="' + logo + '" alt="Mangaba AI" />' : '') +
-        '<p class="hint">Nova conversa.</p></div>'
-      setStreaming(false)
-      curEl = null
+      resetChat()
+    } else if (m.type === 'requestExport') {
+      exportMarkdown()
     } else if (m.type === 'models') {
       $model.innerHTML = ''
       for (const id of m.models) {
@@ -359,7 +512,7 @@
         $model.appendChild(opt)
       }
     } else if (m.type === 'attachments') {
-      if (m.items && m.items.length) { pendingAtts.push.apply(pendingAtts, m.items); renderAttachment() }
+      if (m.items && m.items.length) { pendingAtts.push.apply(pendingAtts, m.items); renderAttachment(); updateTokens() }
     } else if (m.type === 'context') {
       lastCtxChip = m.ctx || null
       renderCtxbar()
@@ -370,8 +523,8 @@
       convId = m.id || newId()
       history = (m.messages && m.messages.length) ? m.messages : [SYSTEM]
       refChips = []
-      renderHistory()
-      renderCtxbar()
+      renderHistory(); decorateLast()
+      renderCtxbar(); updateTokens()
     } else if (m.type === 'prompt') {
       send(m.text)
     }
