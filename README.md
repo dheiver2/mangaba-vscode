@@ -135,6 +135,17 @@ Nada é enviado a terceiros — **apenas ao endpoint que você configurar**. Emb
 
 **Por que o modelo às vezes trava em tarefas grandes?** Os modelos menores têm janela de contexto limitada; use seleção/`@`-contexto e um modelo de contexto maior no servidor para tarefas amplas.
 
+## Publicar novas versões
+
+O CI publica na Marketplace ao empurrar uma tag `vX.Y.Z` (precisa do secret **`VSCE_PAT`** no repositório):
+
+```bash
+npm version patch          # sobe a versão no package.json e cria o commit/tag
+git push --follow-tags     # dispara o workflow: publica por plataforma + build universal
+```
+
+Ou publique manualmente: `npx @vscode/vsce publish --no-dependencies`.
+
 ## Desenvolvimento
 
 ```bash

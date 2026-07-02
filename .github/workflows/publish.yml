@@ -1,0 +1,47 @@
+name: Publish to Marketplace
+
+# Dispara ao empurrar uma tag vX.Y.Z (a versão deve bater com o package.json).
+# Requer o secret VSCE_PAT (Personal Access Token do publisher mangaba-ai).
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  # 1) Builds self-contained POR PLATAFORMA — RAG embutido (transformers.js) funciona
+  #    de fábrica, pois cada runner traz o binário nativo do onnxruntime.
+  platform:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            target: darwin-arm64
+          - os: macos-13
+            target: darwin-x64
+          - os: windows-latest
+            target: win32-x64
+          - os: ubuntu-latest
+            target: linux-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci
+      - run: npm run build
+      - name: Publish (${{ matrix.target }})
+        run: npx --yes @vscode/vsce publish --target ${{ matrix.target }} -p ${{ secrets.VSCE_PAT }}
+
+  # 2) Build UNIVERSAL leve — fallback para plataformas não listadas acima.
+  #    RAG via Ollama (mangaba.embeddingsBackend = ollama).
+  universal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci
+      - run: npm run build
+      - name: Publish (universal, leve)
+        run: npx --yes @vscode/vsce publish --no-dependencies -p ${{ secrets.VSCE_PAT }}
