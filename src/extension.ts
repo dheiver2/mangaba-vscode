@@ -2,10 +2,32 @@ import * as vscode from 'vscode'
 import { CodeIndex } from './rag'
 import { AgentRunner } from './agent'
 import { McpManager } from './mcp'
-import { stripFences } from './pure'
+import * as zlib from 'zlib'
+import * as path from 'path'
+import { stripFences, langFromExt, pdfStreamToText } from './pure'
 
-type ContentPart = { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }
+// Anexo analisado: imagem (visão), texto (código/PDF/dados) ou binário (só metadados).
+type FilePart = {
+  type: 'file'
+  kind: 'image' | 'text' | 'binary'
+  name: string
+  size: number
+  note?: string
+  mime?: string
+  lang?: string
+  text?: string
+  dataUrl?: string
+}
+type ContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } }
+  | FilePart
 interface Msg { role: 'system' | 'user' | 'assistant'; content: string | ContentPart[] }
+
+// Limite de caracteres de um arquivo de texto injetado no prompt (janela de contexto).
+const FILE_CHARS = 20000
+// Tamanho máximo de anexo lido (12 MB).
+const MAX_ATTACH_BYTES = 12 * 1024 * 1024
 
 // Servidor Mangaba público — usado por padrão para TODOS os usuários.
 // Fallback no código (não só no default do manifesto): garante funcionamento
@@ -97,7 +119,7 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
     this.view = view
     view.webview.options = { enableScripts: true, localResourceRoots: [this.ctx.extensionUri] }
     view.webview.html = this.html(view.webview)
-    view.webview.onDidReceiveMessage(async (m: { type: string; history?: Msg[]; model?: string; code?: string; mode?: string; id?: string; title?: string }) => {
+    view.webview.onDidReceiveMessage(async (m: { type: string; history?: Msg[]; model?: string; code?: string; mode?: string; id?: string; title?: string; name?: string; data?: string }) => {
       if (m.type === 'send' && m.history) await this.stream(m.history)
       else if (m.type === 'stop') this.abort?.abort()
       else if (m.type === 'getModels') await this.sendModels()
@@ -105,6 +127,8 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
       else if (m.type === 'apply' && typeof m.code === 'string') await this.applyCode(m.code, m.mode)
       else if (m.type === 'getContext') this.updateContext()
       else if (m.type === 'pickContext') await this.pickContext()
+      else if (m.type === 'attachFiles') await this.attachFiles()
+      else if (m.type === 'analyzeUpload' && m.name && typeof m.data === 'string') await this.analyzeUpload(m.name, m.data)
       else if (m.type === 'save' && m.id && m.history) this.saveConversation(m.id, m.title || 'Conversa', m.history)
       else if (m.type === 'openHistory') await this.openHistory()
     })
@@ -173,10 +197,10 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
       } catch { /* índice indisponível */ }
     }
 
-    if (!notes.length) return history
+    if (!notes.length) return this.flatten(history)
     const copy = history.slice()
     copy.splice(Math.max(0, copy.length - 1), 0, { role: 'system', content: notes.join('\n\n') })
-    return copy
+    return this.flatten(copy)
   }
 
   private postRefs() {
@@ -443,6 +467,142 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
     vscode.commands.executeCommand('mangaba.chatView.focus')
   }
 
+  // ── Anexos: carregamento e análise de arquivos ─────────────────────────
+
+  /** Abre o seletor nativo (multi) e analisa cada arquivo no host. */
+  private async attachFiles() {
+    const uris = await vscode.window.showOpenDialog({ canSelectMany: true, openLabel: 'Anexar' })
+    if (!uris?.length) return
+    const items: FilePart[] = []
+    for (const u of uris) {
+      try {
+        const buf = Buffer.from(await vscode.workspace.fs.readFile(u))
+        items.push(await this.analyzeFile(u.path.split('/').pop() || 'arquivo', buf))
+      } catch { /* arquivo ilegível */ }
+    }
+    if (items.length) this.view?.webview.postMessage({ type: 'attachments', items })
+  }
+
+  /** Analisa bytes vindos do webview (drag & drop / colar), base64. */
+  private async analyzeUpload(name: string, base64: string) {
+    try {
+      const att = await this.analyzeFile(name, Buffer.from(base64, 'base64'))
+      this.view?.webview.postMessage({ type: 'attachments', items: [att] })
+    } catch (e) {
+      this.view?.webview.postMessage({ type: 'error', error: 'Falha ao ler anexo: ' + (e as Error).message })
+    }
+  }
+
+  /** Classifica e extrai conteúdo do arquivo conforme o tipo. */
+  private async analyzeFile(name: string, buf: Buffer): Promise<FilePart> {
+    const size = buf.length
+    const ext = (name.includes('.') ? name.split('.').pop() : '')!.toLowerCase()
+    const kb = size < 10240 ? (size / 1024).toFixed(1) : Math.round(size / 1024).toString()
+    if (size > MAX_ATTACH_BYTES) return { type: 'file', kind: 'binary', name, size, note: `${kb} KB — grande demais (máx 12 MB)` }
+
+    const IMG: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', bmp: 'image/bmp', svg: 'image/svg+xml' }
+    if (IMG[ext]) {
+      const mime = IMG[ext]
+      return { type: 'file', kind: 'image', name, size, mime, dataUrl: `data:${mime};base64,${buf.toString('base64')}`, note: `${kb} KB` }
+    }
+
+    const isPdf = ext === 'pdf' || buf.subarray(0, 5).toString('latin1') === '%PDF-'
+    if (isPdf) {
+      const { text, note } = await this.extractPdfText(buf)
+      const truncated = text.length > FILE_CHARS
+      return {
+        type: 'file', kind: 'text', name, size, lang: 'text',
+        text: truncated ? text.slice(0, FILE_CHARS) + '\n…(truncado)' : (text || '(sem texto extraível)'),
+        note: `${note} · ${kb} KB${truncated ? ' · truncado' : ''}`,
+      }
+    }
+
+    // Detecta texto: decodifica UTF-8 e verifica proporção de bytes de controle.
+    const txt = buf.toString('utf8')
+    const bad = (txt.match(/�/g) || []).length
+    const ctrl = (txt.match(/[\x00-\x08\x0E-\x1F]/g) || []).length
+    const isText = size > 0 && bad / txt.length < 0.02 && ctrl / txt.length < 0.05
+    if (isText) {
+      const lines = txt.split('\n').length
+      const truncated = txt.length > FILE_CHARS
+      return {
+        type: 'file', kind: 'text', name, size, lang: langFromExt(ext),
+        text: truncated ? txt.slice(0, FILE_CHARS) + '\n…(truncado)' : txt,
+        note: `${lines} linhas · ${kb} KB${truncated ? ' · truncado' : ''}`,
+      }
+    }
+    return { type: 'file', kind: 'binary', name, size, note: `${kb} KB — binário` }
+  }
+
+  /** Extrai texto de um PDF. Prioriza pdfjs (resolve fontes/encodings);
+   *  cai no parser heurístico próprio se o pdfjs falhar. */
+  private async extractPdfText(buf: Buffer): Promise<{ text: string; note: string }> {
+    try {
+      const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
+      // Worker empacotado junto ao dist (ver esbuild.js).
+      pdfjs.GlobalWorkerOptions.workerSrc = path.join(__dirname, 'pdf.worker.mjs')
+      const doc = await pdfjs.getDocument({
+        data: new Uint8Array(buf), useWorkerFetch: false, isEvalSupported: false, useSystemFonts: false,
+      }).promise
+      const max = Math.min(doc.numPages, 100)
+      let text = ''
+      for (let p = 1; p <= max; p++) {
+        const tc = await (await doc.getPage(p)).getTextContent()
+        text += tc.items.map((i) => ('str' in i ? i.str : '')).join(' ') + '\n'
+      }
+      const clean = text.replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim()
+      if (clean.length > 16) return { text: clean, note: `PDF · ${doc.numPages} pág` }
+    } catch { /* pdfjs indisponível/falhou → heurística abaixo */ }
+    return this.extractPdfHeuristic(buf)
+  }
+
+  /** Fallback sem dependências: inflate + parser de content-stream. */
+  private extractPdfHeuristic(buf: Buffer): { text: string; note: string } {
+    const raw = buf.toString('latin1')
+    const re = /stream\r?\n/g
+    let m: RegExpExecArray | null
+    let text = ''
+    let blocks = 0
+    while ((m = re.exec(raw))) {
+      const start = m.index + m[0].length
+      const end = raw.indexOf('endstream', start)
+      if (end < 0) continue
+      const chunk = buf.subarray(start, end)
+      let decoded = ''
+      try { decoded = zlib.inflateSync(chunk).toString('latin1') }
+      catch { try { decoded = zlib.inflateRawSync(chunk).toString('latin1') } catch { decoded = '' } }
+      if (!decoded) {
+        const asText = chunk.toString('latin1')
+        if (/\b(BT|Tj|TJ)\b/.test(asText)) decoded = asText
+      }
+      if (decoded && /\b(Tj|TJ)\b/.test(decoded)) { text += pdfStreamToText(decoded) + '\n'; blocks++ }
+    }
+    const pages = (raw.match(/\/Type\s*\/Page[^s]/g) || []).length || undefined
+    const clean = text.replace(/\n{3,}/g, '\n\n').trim()
+    return { text: clean, note: `PDF${pages ? ` · ${pages} pág` : ''} · ${blocks} bloco(s)` }
+  }
+
+  /** Converte partes `file` em texto/imagem que a API OpenAI entende. */
+  private flatten(messages: Msg[]): Msg[] {
+    return messages.map((msg) => {
+      if (typeof msg.content === 'string') return msg
+      const texts: string[] = []
+      const images: ContentPart[] = []
+      for (const p of msg.content) {
+        if (p.type === 'text') { if (p.text) texts.push(p.text) }
+        else if (p.type === 'image_url') images.push(p)
+        else if (p.type === 'file') {
+          if (p.kind === 'image' && p.dataUrl) images.push({ type: 'image_url', image_url: { url: p.dataUrl } })
+          else if (p.kind === 'text') texts.push(`[Arquivo anexado: ${p.name}${p.note ? ` — ${p.note}` : ''}]\n\`\`\`${p.lang || ''}\n${p.text || ''}\n\`\`\``)
+          else texts.push(`[Arquivo anexado: ${p.name}${p.note ? ` — ${p.note}` : ''}. Conteúdo binário, não analisável.]`)
+        }
+      }
+      const joined = texts.join('\n\n')
+      if (images.length) return { role: msg.role, content: [...(joined ? [{ type: 'text', text: joined } as ContentPart] : []), ...images] }
+      return { role: msg.role, content: joined }
+    })
+  }
+
   private async stream(history: Msg[]) {
     const wv = this.view?.webview
     if (!wv) return
@@ -538,13 +698,13 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
     <button id="ctxbtn" type="button" class="icon-btn" title="Adicionar contexto (@): arquivo, seleção, erros" aria-label="Adicionar contexto">
       <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1a7 7 0 1 0 3.2 13.23.75.75 0 1 0-.68-1.34A5.5 5.5 0 1 1 13.5 8c0 .78-.16 1.25-.4 1.5-.22.24-.53.37-.85.37-.31 0-.5-.1-.62-.25-.13-.17-.13-.4-.13-.62V5.25a.75.75 0 0 0-1.42-.34A3 3 0 1 0 10.6 9.7c.1.2.24.38.42.53.4.34.94.51 1.43.51.7 0 1.4-.28 1.92-.83.53-.57.88-1.4.88-2.41A7 7 0 0 0 8 1Zm0 8.5A1.5 1.5 0 1 1 8 6.5a1.5 1.5 0 0 1 0 3Z"/></svg>
     </button>
-    <button id="attach" type="button" class="icon-btn" title="Anexar imagem (use o modelo mangaba-vision-q8)" aria-label="Anexar imagem">
-      <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.5 2A1.5 1.5 0 0 0 1 3.5v9A1.5 1.5 0 0 0 2.5 14h11a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 13.5 2h-11Zm0 1h11a.5.5 0 0 1 .5.5v6.29l-2.4-2.4a.75.75 0 0 0-1.06 0L7.5 10.94 5.96 9.4a.75.75 0 0 0-1.06 0L2 12.3V3.5a.5.5 0 0 1 .5-.5Zm3 1.75A1.25 1.25 0 1 0 5.5 7.25 1.25 1.25 0 0 0 5.5 4.75Z"/></svg>
+    <button id="attach" type="button" class="icon-btn" title="Anexar arquivo (código, texto, PDF, imagem)" aria-label="Anexar arquivo">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M9.6 3.16 4.7 8.05a2.5 2.5 0 0 0 3.54 3.54l5.3-5.3a.75.75 0 1 1 1.06 1.06l-5.3 5.3a4 4 0 0 1-5.66-5.66l4.9-4.89a2.75 2.75 0 0 1 3.89 3.89l-4.9 4.89a1.5 1.5 0 0 1-2.12-2.12l4.54-4.54a.75.75 0 1 1 1.06 1.06L6.97 9.81a.001.001 0 0 0 0 .01.001.001 0 0 0 .01 0l4.9-4.9a1.25 1.25 0 0 0-1.77-1.77Z"/></svg>
     </button>
-    <textarea id="input" rows="1" placeholder="Pergunte à Mangaba…"></textarea>
+    <textarea id="input" rows="1" placeholder="Pergunte à Mangaba… (arraste arquivos aqui)"></textarea>
     <button id="send" type="submit" class="send-btn" title="Enviar" aria-label="Enviar"></button>
   </form>
-  <input id="file" type="file" accept="image/*" hidden />
+  <input id="file" type="file" multiple hidden />
   <script nonce="${nonce}" src="${hljsUri}"></script>
   <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>

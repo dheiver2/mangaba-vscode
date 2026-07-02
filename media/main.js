@@ -20,7 +20,7 @@
   const $attachments = document.getElementById('attachments')
 
   const $ctxbar = document.getElementById('ctxbar')
-  let pendingImage = null // dataURL da imagem anexada
+  let pendingAtts = [] // anexos analisados aguardando envio (partes 'file')
 
   // Pede o contexto do editor (arquivo/seleção) ao host.
   vscode.postMessage({ type: 'getContext' })
@@ -86,36 +86,73 @@
     vscode.postMessage({ type: 'setModel', model: $model.value })
   })
 
-  // ── Anexar imagem (para o modelo de visão) ──────────────────────────────
-  $attach.addEventListener('click', () => $file.click())
+  // ── Anexar arquivos (código, texto, PDF, imagem) — análise no host ───────
+  // Botão → seletor nativo do VS Code (multi, qualquer tipo).
+  $attach.addEventListener('click', () => vscode.postMessage({ type: 'attachFiles' }))
+  // Input oculto como fallback (também aciona análise no host via base64).
   $file.addEventListener('change', () => {
-    const f = $file.files && $file.files[0]
-    if (f) readImage(f)
+    for (const f of $file.files || []) uploadFile(f)
     $file.value = ''
   })
+  // Colar: imagens ou arquivos da área de transferência.
   $input.addEventListener('paste', (e) => {
     const items = (e.clipboardData && e.clipboardData.items) || []
+    let handled = false
     for (const it of items) {
-      if (it.type && it.type.indexOf('image') === 0) {
+      if (it.kind === 'file') {
         const f = it.getAsFile()
-        if (f) { readImage(f); e.preventDefault() }
-        break
+        if (f) { uploadFile(f); handled = true }
       }
     }
+    if (handled) e.preventDefault()
   })
-  function readImage(file) {
+  // Arrastar & soltar sobre o composer.
+  ;['dragenter', 'dragover'].forEach((ev) => $form.addEventListener(ev, (e) => {
+    if (e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files')) {
+      e.preventDefault(); $form.classList.add('dragover')
+    }
+  }))
+  ;['dragleave', 'dragend'].forEach((ev) => $form.addEventListener(ev, (e) => {
+    if (e.target === $form) $form.classList.remove('dragover')
+  }))
+  $form.addEventListener('drop', (e) => {
+    if (!e.dataTransfer || !e.dataTransfer.files.length) return
+    e.preventDefault(); $form.classList.remove('dragover')
+    for (const f of e.dataTransfer.files) uploadFile(f)
+  })
+
+  // Lê o arquivo como base64 e pede análise ao host.
+  function uploadFile(file) {
+    if (file.size > 12 * 1024 * 1024) { addMessage('assistant', '⚠️ "' + file.name + '" excede 12 MB.'); return }
     const r = new FileReader()
-    r.onload = () => { pendingImage = r.result; renderAttachment() }
+    r.onload = () => {
+      const b64 = String(r.result).split(',')[1] || ''
+      vscode.postMessage({ type: 'analyzeUpload', name: file.name || 'arquivo', data: b64 })
+    }
     r.readAsDataURL(file)
   }
+
+  // Ícone por tipo de anexo (SVG inline).
+  function attIcon(a) {
+    if (a.kind === 'image' && a.dataUrl) return '<img class="att-thumb" src="' + a.dataUrl + '" alt="" />'
+    var d = a.kind === 'binary'
+      ? 'M4 1.5A1.5 1.5 0 0 0 2.5 3v10A1.5 1.5 0 0 0 4 14.5h8a1.5 1.5 0 0 0 1.5-1.5V6L9 1.5H4Z'
+      : 'M9 1.5H4A1.5 1.5 0 0 0 2.5 3v10A1.5 1.5 0 0 0 4 14.5h8a1.5 1.5 0 0 0 1.5-1.5V6L9 1.5Zm-.25 1.31L12.19 6H9.5a.75.75 0 0 1-.75-.75V2.81Z'
+    return '<svg class="att-ico" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="' + d + '"/></svg>'
+  }
+
   function renderAttachment() {
     $attachments.innerHTML = ''
-    if (!pendingImage) return
-    const chip = document.createElement('div')
-    chip.className = 'att-chip'
-    chip.innerHTML = '<img src="' + pendingImage + '" /><button title="Remover" aria-label="Remover">×</button>'
-    chip.querySelector('button').addEventListener('click', () => { pendingImage = null; renderAttachment() })
-    $attachments.appendChild(chip)
+    pendingAtts.forEach((a, idx) => {
+      const chip = document.createElement('div')
+      chip.className = 'att-chip' + (a.kind === 'image' ? ' img' : '') + (a.kind === 'binary' ? ' bin' : '')
+      chip.innerHTML = attIcon(a) +
+        '<span class="att-meta"><span class="att-name">' + escapeHtml(a.name) + '</span>' +
+        (a.note ? '<span class="att-sub">' + escapeHtml(a.note) + '</span>' : '') + '</span>' +
+        '<button class="att-x" title="Remover" aria-label="Remover">×</button>'
+      chip.querySelector('.att-x').addEventListener('click', () => { pendingAtts.splice(idx, 1); renderAttachment() })
+      $attachments.appendChild(chip)
+    })
   }
 
   /** @type {{role:string,content:string}[]} */
@@ -206,6 +243,10 @@
     for (const part of content) {
       if (part.type === 'text' && part.text) html += renderMarkdown(part.text)
       else if (part.type === 'image_url' && part.image_url) html += '<img class="att-img" src="' + part.image_url.url + '" alt="imagem" />'
+      else if (part.type === 'file') {
+        if (part.kind === 'image' && part.dataUrl) html += '<img class="att-img" src="' + part.dataUrl + '" alt="' + escapeHtml(part.name || '') + '" />'
+        else html += '<span class="file-tag">' + attIcon(part) + '<span class="att-name">' + escapeHtml(part.name || 'arquivo') + '</span>' + (part.note ? '<span class="att-sub">' + escapeHtml(part.note) + '</span>' : '') + '</span>'
+      }
     }
     return html
   }
@@ -237,18 +278,18 @@
 
   function send(text) {
     const txt = (text ?? $input.value).trim()
-    if ((!txt && !pendingImage) || streaming) return
+    if ((!txt && !pendingAtts.length) || streaming) return
     let content
-    if (pendingImage) {
+    if (pendingAtts.length) {
       content = []
       if (txt) content.push({ type: 'text', text: txt })
-      content.push({ type: 'image_url', image_url: { url: pendingImage } })
+      for (const a of pendingAtts) content.push(a)
     } else {
       content = txt
     }
     history.push({ role: 'user', content })
     addMessage('user', content)
-    pendingImage = null
+    pendingAtts = []
     renderAttachment()
     $input.value = ''
     autoresize()
@@ -317,6 +358,8 @@
         if (id === m.current) opt.selected = true
         $model.appendChild(opt)
       }
+    } else if (m.type === 'attachments') {
+      if (m.items && m.items.length) { pendingAtts.push.apply(pendingAtts, m.items); renderAttachment() }
     } else if (m.type === 'context') {
       lastCtxChip = m.ctx || null
       renderCtxbar()

@@ -27,7 +27,7 @@ Copilot, Cursor e Cody são excelentes — mas mandam seu código para servidore
 | Categoria | O que faz |
 | --- | --- |
 | **Chat** | Painel na Activity Bar com streaming, markdown e **syntax highlighting**; seletor de modelo ao vivo; histórico de conversas. |
-| **Visão** | Anexe ou cole imagens e pergunte sobre elas (modelo multimodal). |
+| **Anexos & análise de arquivos** | **Arraste, cole ou anexe** qualquer arquivo — código, texto, JSON/CSV, logs, **PDF** (texto extraído automaticamente) e **imagens** (visão). Vários de uma vez, com chips por tipo. |
 | **Editar código** | Botões **Aplicar / Inserir / Copiar** em cada bloco; **diff de revisão** antes de aplicar; **Editar seleção** por instrução (`Ctrl/Cmd+Alt+K`). |
 | **Agente autônomo** | Planeja, lê, edita, **roda comandos no terminal (com aprovação)** e **verifica rodando os testes** — em laço, com **checkpoints/rollback**. |
 | **RAG @codebase** | Indexa o repositório com **embeddings locais** e injeta os trechos relevantes automaticamente. |
@@ -43,6 +43,27 @@ Copilot, Cursor e Cody são excelentes — mas mandam seu código para servidore
 3. Escolha o **modelo** no seletor do topo do painel.
 4. Converse. Para trazer o código junto, deixe o arquivo aberto (contexto automático) ou use o botão **`@`**.
 5. Selecione um trecho e use o menu de contexto: **Explicar**, **Editar (IA)** ou **Gerar testes**.
+
+---
+
+## Anexar e analisar arquivos
+
+Três formas de anexar (como nas grandes IAs):
+
+- **Arraste e solte** arquivos sobre o campo de mensagem;
+- **Cole** (`Ctrl/Cmd+V`) um arquivo ou imagem da área de transferência;
+- Clique no **clipe** para escolher no seletor do sistema (vários de uma vez).
+
+A análise é feita **no host** conforme o tipo:
+
+| Tipo | O que acontece |
+| --- | --- |
+| Código / texto / JSON / CSV / logs | Conteúdo lido e enviado ao modelo (com nome do arquivo e linguagem). |
+| **PDF** | Texto **extraído automaticamente** (resolve fontes/encodings via pdfjs; parser próprio como reserva). |
+| **Imagem** | Enviada ao modelo de **visão** (use `mangaba-vision-q8`). |
+| Binário | Anexado como referência (metadados), sinalizado como não analisável. |
+
+Arquivos de texto grandes são truncados para caber na janela de contexto (com aviso no chip). Tudo roda localmente/no seu servidor — **nada vai para terceiros**.
 
 ---
 
