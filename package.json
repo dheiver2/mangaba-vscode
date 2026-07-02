@@ -2,7 +2,7 @@
   "name": "mangaba-ai",
   "displayName": "Mangaba AI",
   "description": "Chat com a IA brasileira e soberana Mangaba, dentro do VS Code — powered pelos modelos self-hosted (OpenAI-compatível).",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "publisher": "mangaba",
   "icon": "media/icon-128.png",
   "license": "MIT",
@@ -197,8 +197,8 @@
       "properties": {
         "mangaba.baseUrl": {
           "type": "string",
-          "default": "https://walton-undepreciatory-tracee.ngrok-free.dev/v1",
-          "markdownDescription": "Endpoint **OpenAI-compatível** do servidor Mangaba (raiz terminando em `/v1`). É daqui que a extensão lista os modelos e faz o streaming do chat.",
+          "default": "",
+          "markdownDescription": "**Configure com o SEU servidor Mangaba** — endpoint OpenAI-compatível (raiz terminando em `/v1`). Sem isso, o chat pede pra configurar.",
           "order": 1
         },
         "mangaba.model": {
