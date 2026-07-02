@@ -1,0 +1,32 @@
+name: Package (per-platform)
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  package:
+    strategy:
+      matrix:
+        include:
+          - os: macos-14        # arm64
+            target: darwin-arm64
+          - os: macos-13        # x64
+            target: darwin-x64
+          - os: windows-latest
+            target: win32-x64
+          - os: ubuntu-latest
+            target: linux-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci
+      - run: npm run build
+      # empacota já com o binário nativo do onnxruntime da plataforma do runner
+      - run: npx --yes @vscode/vsce package --target ${{ matrix.target }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mangaba-ai-${{ matrix.target }}
+          path: '*.vsix'

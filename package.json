@@ -2,7 +2,7 @@
   "name": "mangaba-ai",
   "displayName": "Mangaba AI",
   "description": "Chat com a IA brasileira e soberana Mangaba, dentro do VS Code — powered pelos modelos self-hosted (OpenAI-compatível).",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "publisher": "mangaba",
   "icon": "media/icon-128.png",
   "license": "MIT",
@@ -258,6 +258,32 @@
           "default": true,
           "markdownDescription": "Usa o **índice local do projeto** (RAG @codebase) para recuperar trechos relevantes e injetá-los no chat. Rode **Mangaba AI: Indexar projeto** primeiro. Embeddings 100% locais (transformers.js), nada sai da máquina.",
           "order": 10
+        },
+        "mangaba.embeddingsBackend": {
+          "type": "string",
+          "enum": [
+            "transformers",
+            "ollama"
+          ],
+          "default": "transformers",
+          "enumDescriptions": [
+            "Local, embutido (transformers.js) — self-contained, mas o vsix fica grande/por-plataforma",
+            "Ollama local (HTTP) — vsix leve/portátil; exige Ollama + `ollama pull nomic-embed-text`"
+          ],
+          "markdownDescription": "Backend de **embeddings** do RAG @codebase.",
+          "order": 11
+        },
+        "mangaba.ollamaEmbedUrl": {
+          "type": "string",
+          "default": "http://localhost:11434/api/embeddings",
+          "markdownDescription": "URL de embeddings do Ollama (quando `embeddingsBackend = ollama`).",
+          "order": 12
+        },
+        "mangaba.ollamaEmbedModel": {
+          "type": "string",
+          "default": "nomic-embed-text",
+          "markdownDescription": "Modelo de embedding do Ollama.",
+          "order": 13
         }
       }
     },

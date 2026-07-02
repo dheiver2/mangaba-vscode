@@ -1,6 +1,6 @@
 # Mangaba AI para VS Code
 
-[![Version](https://img.shields.io/badge/version-0.9.0-E94A12)](https://github.com/dheiver2/mangaba-vscode)
+[![Version](https://img.shields.io/badge/version-0.9.1-E94A12)](https://github.com/dheiver2/mangaba-vscode)
 [![VS Code](https://img.shields.io/badge/VS%20Code-1.85%2B-007ACC?logo=visualstudiocode&logoColor=white)](https://code.visualstudio.com/)
 [![License](https://img.shields.io/badge/license-MIT-3DA639)](LICENSE)
 [![Feito no Brasil](https://img.shields.io/badge/Feito%20no-Brasil-009B3A)](https://mangaba.chat)

@@ -15,10 +15,36 @@ async function getExtractor() {
   return extractorPromise
 }
 
-async function embedOne(text: string): Promise<number[]> {
+async function embedLocal(text: string): Promise<number[]> {
   const ex = await getExtractor()
   const r = await ex(text, { pooling: 'mean', normalize: true })
   return Array.from(r.data)
+}
+
+// Backend alternativo: Ollama local (zero binário nativo → vsix leve/portátil).
+async function embedOllama(text: string, url: string, model: string): Promise<number[]> {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model, prompt: text }),
+  })
+  if (!res.ok) throw new Error(`Ollama embeddings HTTP ${res.status} (rode: ollama pull ${model})`)
+  const d = (await res.json()) as { embedding?: number[]; embeddings?: number[][] }
+  const v = d.embedding ?? d.embeddings?.[0]
+  if (!v) throw new Error('Ollama: resposta sem embedding')
+  return v
+}
+
+async function embedOne(text: string): Promise<number[]> {
+  const c = vscode.workspace.getConfiguration('mangaba')
+  if ((c.get<string>('embeddingsBackend') || 'transformers') === 'ollama') {
+    return embedOllama(
+      text,
+      c.get<string>('ollamaEmbedUrl') || 'http://localhost:11434/api/embeddings',
+      c.get<string>('ollamaEmbedModel') || 'nomic-embed-text',
+    )
+  }
+  return embedLocal(text)
 }
 
 function dot(a: number[], b: number[]): number {
