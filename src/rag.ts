@@ -1,4 +1,5 @@
 import * as vscode from 'vscode'
+import { chunkText } from './pure'
 
 // RAG @codebase — embeddings 100% locais via transformers.js (Xenova/all-MiniLM-L6-v2).
 // Nenhum dado sai da máquina; o modelo (~25MB) é baixado uma vez e fica em cache.
@@ -63,15 +64,6 @@ function dot(a: number[], b: number[]): number {
 
 const CODE_EXT = /\.(ts|tsx|js|jsx|mjs|cjs|py|java|go|rb|rs|c|cc|cpp|h|hpp|cs|php|kt|swift|scala|sh|sql|json|ya?ml|md|html|css|scss|less|vue|svelte|astro)$/i
 
-function chunk(text: string, size = 900, overlap = 150): string[] {
-  const out: string[] = []
-  for (let i = 0; i < text.length; i += size - overlap) {
-    out.push(text.slice(i, i + size))
-    if (i + size >= text.length) break
-  }
-  return out.length ? out : [text]
-}
-
 interface Item { file: string; text: string; vec: number[] }
 
 export class CodeIndex {
@@ -109,7 +101,7 @@ export class CodeIndex {
         if (buf.length > 200000) continue
         const text = Buffer.from(buf).toString('utf8')
         const rel = vscode.workspace.asRelativePath(u)
-        for (const c of chunk(text)) if (c.trim()) chunks.push({ file: rel, text: c })
+        for (const c of chunkText(text)) if (c.trim()) chunks.push({ file: rel, text: c })
       } catch { /* ignora binário/ilegível */ }
     }
     const MAX = 2500

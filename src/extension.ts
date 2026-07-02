@@ -2,6 +2,7 @@ import * as vscode from 'vscode'
 import { CodeIndex } from './rag'
 import { AgentRunner } from './agent'
 import { McpManager } from './mcp'
+import { stripFences } from './pure'
 
 type ContentPart = { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }
 interface Msg { role: 'system' | 'user' | 'assistant'; content: string | ContentPart[] }
@@ -39,10 +40,6 @@ const diffContents = new Map<string, string>()
 
 function currentModel(ctx: vscode.ExtensionContext): string {
   return ctx.globalState.get<string>('mangaba.model') || cfg().model
-}
-
-function stripFences(s: string): string {
-  return s.replace(/^\s*```[a-zA-Z0-9_+#.-]*\n?/, '').replace(/\n?```\s*$/, '').replace(/\s+$/, '')
 }
 
 /** Chamada não-streaming ao modelo. Retorna o conteúdo (ou null). */

@@ -151,8 +151,12 @@ Ou publique manualmente: `npx @vscode/vsce publish --no-dependencies`.
 ```bash
 npm install
 npm run build        # ou: npm run watch  (F5 abre o Extension Development Host)
+npm test             # testes unitários (node:test + tsx) das funções puras
+npm run typecheck    # checagem de tipos (tsc --noEmit)
 npm run package      # gera o .vsix
 ```
+
+O CI roda `typecheck` + `test` + `build` em todo push/PR (`.github/workflows/ci.yml`) antes de qualquer publicação.
 
 ---
 

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode'
 import { exec } from 'child_process'
 import type { McpTool } from './mcp'
+import { parseAction as parseActionPure } from './pure'
 
 export type ChatFn = (messages: Array<{ role: string; content: string }>) => Promise<string | null>
 export type ApplyFileFn = (relPath: string, content: string) => Promise<boolean>
@@ -14,15 +15,8 @@ function truncate(s: string, n = 2000): string {
   return s.length > n ? s.slice(0, n) + `\n…(+${s.length - n} chars truncados)` : s
 }
 
-/** Extrai a 1ª ação (bloco json ou objeto com "tool") da resposta do modelo. */
 function parseAction(text: string): Action | null {
-  const fence = text.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/)
-  const raw = fence ? fence[1] : (text.match(/\{[\s\S]*"tool"[\s\S]*\}/) || [])[0]
-  if (!raw) return null
-  try {
-    const o = JSON.parse(raw)
-    return typeof o.tool === 'string' ? o : null
-  } catch { return null }
+  return parseActionPure(text) as Action | null
 }
 
 const SYSTEM =

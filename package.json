@@ -407,12 +407,15 @@
     "build": "node esbuild.js",
     "watch": "node esbuild.js --watch",
     "vscode:prepublish": "node esbuild.js --production",
+    "test": "tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
     "package": "npx --yes @vscode/vsce package"
   },
   "devDependencies": {
     "@types/node": "^20",
     "@types/vscode": "^1.85.0",
     "esbuild": "^0.24.0",
+    "tsx": "^4.19.2",
     "typescript": "^5"
   },
   "dependencies": {
