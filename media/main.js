@@ -43,6 +43,43 @@
   })
   function flash(btn, on, off) { btn.textContent = on; setTimeout(() => { btn.textContent = off }, 1400) }
 
+  // Histórico + @-contexto
+  const $history = document.getElementById('history')
+  const $ctxbtn = document.getElementById('ctxbtn')
+  $history.addEventListener('click', () => vscode.postMessage({ type: 'openHistory' }))
+  $ctxbtn.addEventListener('click', () => vscode.postMessage({ type: 'pickContext' }))
+
+  function newId() { return 'c-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7) }
+  let convId = newId()
+  let lastCtxChip = null   // chip do arquivo/seleção automáticos
+  let refChips = []        // chips das @-refs escolhidas
+
+  function firstUserTitle() {
+    const u = history.find((m) => m.role === 'user')
+    if (!u) return 'Conversa'
+    const t = typeof u.content === 'string' ? u.content : (u.content.find((p) => p.type === 'text') || {}).text || 'Conversa'
+    return t.replace(/\s+/g, ' ').trim().slice(0, 60) || 'Conversa'
+  }
+  function persist() {
+    vscode.postMessage({ type: 'save', id: convId, title: firstUserTitle(), history: history })
+  }
+  function renderCtxbar() {
+    let html = ''
+    if (lastCtxChip) html += '<span class="ctx-chip" title="Enviado como contexto">◧ ' + escapeHtml(lastCtxChip.file) + (lastCtxChip.hasSel ? ' · seleção' : '') + '</span>'
+    for (const c of refChips) html += '<span class="ctx-chip ref" title="Contexto extra (@)">' + escapeHtml(c) + '</span>'
+    $ctxbar.innerHTML = html
+  }
+  function renderHistory() {
+    $messages.innerHTML = ''
+    for (const m of history) {
+      if (m.role === 'system') continue
+      addMessage(m.role, m.content)
+    }
+    if (history.filter((m) => m.role !== 'system').length === 0) {
+      $messages.innerHTML = '<div class="empty"><img class="logo-img" src="' + (document.body.dataset.logo || '') + '" alt="Mangaba AI" /><p class="hint">Nova conversa.</p></div>'
+    }
+  }
+
   // Pede ao host a lista de modelos do servidor Mangaba (/v1/models).
   vscode.postMessage({ type: 'getModels' })
   $model.addEventListener('change', () => {
@@ -248,6 +285,7 @@
       if (curEl) highlightIn(curEl)
       setStreaming(false)
       curEl = null
+      persist()
     } else if (m.type === 'error') {
       const last = history[history.length - 1]
       if (last && last.role === 'assistant' && !last.content) {
@@ -260,6 +298,9 @@
       curEl = null
     } else if (m.type === 'clear') {
       history = [SYSTEM]
+      convId = newId()
+      refChips = []
+      renderCtxbar()
       const logo = document.body.dataset.logo || ''
       $messages.innerHTML =
         '<div class="empty">' +
@@ -277,12 +318,17 @@
         $model.appendChild(opt)
       }
     } else if (m.type === 'context') {
-      if (m.ctx) {
-        $ctxbar.innerHTML = '<span class="ctx-chip" title="Enviado ao modelo como contexto">◧ ' +
-          escapeHtml(m.ctx.file) + (m.ctx.hasSel ? ' · seleção' : '') + '</span>'
-      } else {
-        $ctxbar.innerHTML = ''
-      }
+      lastCtxChip = m.ctx || null
+      renderCtxbar()
+    } else if (m.type === 'refs') {
+      refChips = m.chips || []
+      renderCtxbar()
+    } else if (m.type === 'loaded') {
+      convId = m.id || newId()
+      history = (m.messages && m.messages.length) ? m.messages : [SYSTEM]
+      refChips = []
+      renderHistory()
+      renderCtxbar()
     } else if (m.type === 'prompt') {
       send(m.text)
     }

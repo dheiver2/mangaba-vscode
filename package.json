@@ -2,7 +2,7 @@
   "name": "mangaba-ai",
   "displayName": "Mangaba AI",
   "description": "Chat com a IA brasileira e soberana Mangaba, dentro do VS Code — powered pelos modelos self-hosted (OpenAI-compatível).",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "publisher": "mangaba",
   "icon": "media/icon-128.png",
   "license": "MIT",
@@ -31,7 +31,12 @@
       { "command": "mangaba.newChat", "title": "Nova conversa", "category": "Mangaba AI", "icon": "$(add)" },
       { "command": "mangaba.explainSelection", "title": "Explicar seleção", "category": "Mangaba AI", "icon": "$(sparkle)" },
       { "command": "mangaba.editSelection", "title": "Editar seleção (IA)", "category": "Mangaba AI", "icon": "$(wand)" },
-      { "command": "mangaba.agentTask", "title": "Tarefa no projeto (agente)", "category": "Mangaba AI", "icon": "$(rocket)" }
+      { "command": "mangaba.agentTask", "title": "Tarefa no projeto (agente)", "category": "Mangaba AI", "icon": "$(rocket)" },
+      { "command": "mangaba.generateTests", "title": "Gerar testes", "category": "Mangaba AI", "icon": "$(beaker)" },
+      { "command": "mangaba.fixDiagnostics", "title": "Corrigir erros com IA", "category": "Mangaba AI", "icon": "$(lightbulb-autofix)" },
+      { "command": "mangaba.commitMessage", "title": "Gerar mensagem de commit", "category": "Mangaba AI", "icon": "$(sparkle)" },
+      { "command": "mangaba.pickContext", "title": "Adicionar contexto (@)", "category": "Mangaba AI", "icon": "$(mention)" },
+      { "command": "mangaba.openHistory", "title": "Conversas salvas", "category": "Mangaba AI", "icon": "$(history)" }
     ],
     "keybindings": [
       { "command": "mangaba.openChat", "key": "ctrl+alt+m", "mac": "cmd+alt+m" },
@@ -44,7 +49,11 @@
       ],
       "editor/context": [
         { "command": "mangaba.editSelection", "when": "editorHasSelection", "group": "1_mangaba@1" },
-        { "command": "mangaba.explainSelection", "when": "editorHasSelection", "group": "1_mangaba@2" }
+        { "command": "mangaba.explainSelection", "when": "editorHasSelection", "group": "1_mangaba@2" },
+        { "command": "mangaba.generateTests", "group": "1_mangaba@3" }
+      ],
+      "scm/title": [
+        { "command": "mangaba.commitMessage", "when": "scmProvider == git", "group": "navigation" }
       ],
       "commandPalette": [
         { "command": "mangaba.newChat", "when": "false" }

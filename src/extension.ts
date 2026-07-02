@@ -26,6 +26,33 @@ function currentModel(ctx: vscode.ExtensionContext): string {
   return ctx.globalState.get<string>('mangaba.model') || cfg().model
 }
 
+function stripFences(s: string): string {
+  return s.replace(/^\s*```[a-zA-Z0-9_+#.-]*\n?/, '').replace(/\n?```\s*$/, '').replace(/\s+$/, '')
+}
+
+/** Chamada não-streaming ao modelo. Retorna o conteúdo (ou null). */
+async function chatOnce(
+  ctx: vscode.ExtensionContext,
+  messages: Msg[],
+  temperature = 0.2,
+): Promise<string | null> {
+  const c = cfg()
+  if (!c.baseUrl) return null
+  try {
+    const res = await fetch(`${c.baseUrl}/chat/completions`, {
+      method: 'POST', headers: authHeaders(c),
+      body: JSON.stringify({ model: currentModel(ctx), messages, temperature, max_tokens: c.maxTokens, stream: false }),
+    })
+    if (!res.ok) return null
+    const d = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> }
+    return d.choices?.[0]?.message?.content ?? null
+  } catch {
+    return null
+  }
+}
+
+interface SavedConv { id: string; title: string; messages: Msg[]; ts: number }
+
 function authHeaders(c: ReturnType<typeof cfg>) {
   return {
     'Content-Type': 'application/json',
@@ -39,6 +66,8 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView
   private abort?: AbortController
   private lastEditor?: vscode.TextEditor
+  private pendingRefs: string[] = []      // notas de contexto (@) para o próximo envio
+  private pendingChips: string[] = []
 
   constructor(private readonly ctx: vscode.ExtensionContext) {
     this.lastEditor = vscode.window.activeTextEditor
@@ -48,13 +77,16 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
     this.view = view
     view.webview.options = { enableScripts: true, localResourceRoots: [this.ctx.extensionUri] }
     view.webview.html = this.html(view.webview)
-    view.webview.onDidReceiveMessage(async (m: { type: string; history?: Msg[]; model?: string; code?: string; mode?: string }) => {
+    view.webview.onDidReceiveMessage(async (m: { type: string; history?: Msg[]; model?: string; code?: string; mode?: string; id?: string; title?: string }) => {
       if (m.type === 'send' && m.history) await this.stream(m.history)
       else if (m.type === 'stop') this.abort?.abort()
       else if (m.type === 'getModels') await this.sendModels()
       else if (m.type === 'setModel' && m.model) await this.ctx.globalState.update('mangaba.model', m.model)
       else if (m.type === 'apply' && typeof m.code === 'string') await this.applyCode(m.code, m.mode)
       else if (m.type === 'getContext') this.updateContext()
+      else if (m.type === 'pickContext') await this.pickContext()
+      else if (m.type === 'save' && m.id && m.history) this.saveConversation(m.id, m.title || 'Conversa', m.history)
+      else if (m.type === 'openHistory') await this.openHistory()
     })
     this.updateContext()
   }
@@ -94,13 +126,105 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
     this.view?.webview.postMessage({ type: 'context', ctx: chip ?? null })
   }
 
-  /** Insere o contexto do editor como system message antes do turno atual. */
+  /** Insere o contexto do editor + as @-refs como system message antes do turno atual. */
   private withContext(history: Msg[]): Msg[] {
+    const notes: string[] = []
     const { note } = this.editorContext()
-    if (!note) return history
+    if (note) notes.push(note)
+    if (this.pendingRefs.length) notes.push(...this.pendingRefs)
+    // consome as @-refs (valem para um envio)
+    this.pendingRefs = []
+    this.pendingChips = []
+    this.postRefs()
+    if (!notes.length) return history
     const copy = history.slice()
-    copy.splice(Math.max(0, copy.length - 1), 0, { role: 'system', content: note })
+    copy.splice(Math.max(0, copy.length - 1), 0, { role: 'system', content: notes.join('\n\n') })
     return copy
+  }
+
+  private postRefs() {
+    this.view?.webview.postMessage({ type: 'refs', chips: this.pendingChips })
+  }
+
+  // ── Histórico de conversas (workspaceState) ──────────────────────────────
+  private convKey = 'mangaba.conversations'
+  private saveConversation(id: string, title: string, messages: Msg[]) {
+    if (messages.filter((m) => m.role !== 'system').length === 0) return
+    const list = this.ctx.workspaceState.get<SavedConv[]>(this.convKey, [])
+    const rest = list.filter((c) => c.id !== id)
+    rest.unshift({ id, title: title.slice(0, 80), messages, ts: Date.now() })
+    this.ctx.workspaceState.update(this.convKey, rest.slice(0, 40))
+  }
+  async openHistory() {
+    const list = this.ctx.workspaceState.get<SavedConv[]>(this.convKey, [])
+    if (!list.length) { vscode.window.showInformationMessage('Mangaba: nenhuma conversa salva ainda.'); return }
+    const pick = await vscode.window.showQuickPick(
+      list.map((c) => ({ label: c.title, description: new Date(c.ts).toLocaleString('pt-BR'), id: c.id })),
+      { placeHolder: 'Abrir conversa salva' },
+    )
+    if (!pick) return
+    const conv = list.find((c) => c.id === pick.id)
+    if (conv) { this.reveal(); this.view?.webview.postMessage({ type: 'loaded', id: conv.id, messages: conv.messages }) }
+  }
+
+  // ── @-contexto (quick pick nativo) ───────────────────────────────────────
+  async pickContext() {
+    const ed = this.activeEditor()
+    const opts = [
+      { label: '$(file) Arquivo atual', id: 'file' },
+      { label: '$(selection) Seleção atual', id: 'sel' },
+      { label: '$(warning) Erros do arquivo', id: 'errors' },
+      { label: '$(folder-opened) Escolher arquivo…', id: 'pick' },
+    ]
+    const chosen = await vscode.window.showQuickPick(opts, { placeHolder: 'Adicionar contexto (@) ao próximo envio' })
+    if (!chosen) return
+    let note = ''
+    let chip = ''
+    if (chosen.id === 'file' && ed) {
+      note = this.fileNote(ed.document, ed.document.getText())
+      chip = ed.document.uri.path.split('/').pop() || 'arquivo'
+    } else if (chosen.id === 'sel' && ed && !ed.selection.isEmpty) {
+      note = this.fileNote(ed.document, ed.document.getText(ed.selection), 'seleção')
+      chip = 'seleção'
+    } else if (chosen.id === 'errors' && ed) {
+      const diags = vscode.languages.getDiagnostics(ed.document.uri)
+      if (!diags.length) { vscode.window.showInformationMessage('Sem erros neste arquivo.'); return }
+      note = 'Erros (diagnostics) do arquivo:\n' + diags.map((d) => `- linha ${d.range.start.line + 1}: ${d.message}`).join('\n')
+      chip = 'erros'
+    } else if (chosen.id === 'pick') {
+      const uris = await vscode.workspace.findFiles('**/*', '**/{node_modules,dist,.git}/**', 400)
+      const fp = await vscode.window.showQuickPick(uris.map((u) => ({ label: vscode.workspace.asRelativePath(u), uri: u })), { placeHolder: 'Escolher arquivo' })
+      if (!fp) return
+      const doc = await vscode.workspace.openTextDocument(fp.uri)
+      note = this.fileNote(doc, doc.getText())
+      chip = fp.label.split('/').pop() || fp.label
+    } else { return }
+    if (note) { this.pendingRefs.push(note); this.pendingChips.push('@' + chip); this.postRefs() }
+  }
+
+  private fileNote(doc: vscode.TextDocument, body: string, kind = 'arquivo'): string {
+    const rel = vscode.workspace.asRelativePath(doc.uri)
+    const clipped = body.length > cfg().maxContextChars ? body.slice(0, cfg().maxContextChars) + '\n… (truncado)' : body
+    return `Contexto (${kind}) \`${rel}\` (${doc.languageId}):\n\`\`\`${doc.languageId}\n${clipped}\n\`\`\``
+  }
+
+  /** Substitui um range com diff de revisão opcional. Retorna true se aplicou. */
+  async reviewReplace(doc: vscode.TextDocument, range: vscode.Range, newText: string, label: string): Promise<boolean> {
+    if (cfg().reviewBeforeApply) {
+      const full = doc.getText()
+      const modified = full.slice(0, doc.offsetAt(range.start)) + newText + full.slice(doc.offsetAt(range.end))
+      const uri = vscode.Uri.parse(`${DIFF_SCHEME}:${label}`).with({ query: String(Date.now()) })
+      diffContents.set(uri.toString(), modified)
+      await vscode.commands.executeCommand('vscode.diff', doc.uri, uri, `Mangaba — ${label}`)
+      const pick = await vscode.window.showInformationMessage('Aplicar a mudança da Mangaba?', 'Aplicar', 'Cancelar')
+      diffContents.delete(uri.toString())
+      if (pick !== 'Aplicar') return false
+      await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+    }
+    const we = new vscode.WorkspaceEdit()
+    we.replace(doc.uri, range, newText)
+    await vscode.workspace.applyEdit(we)
+    return true
   }
 
   /** Aplica um bloco de código no editor ativo (com diff de revisão opcional). */
@@ -117,51 +241,41 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
     else if (mode === 'replaceFile') range = new vscode.Range(doc.positionAt(0), doc.positionAt(doc.getText().length))
     else range = sel.isEmpty ? new vscode.Range(sel.active, sel.active) : sel
 
-    const doApply = async () => {
-      const we = new vscode.WorkspaceEdit()
-      we.replace(doc.uri, range, code)
-      await vscode.workspace.applyEdit(we)
-      vscode.window.showInformationMessage('Mangaba: código aplicado (Ctrl/Cmd+Z para desfazer).')
-    }
-
-    if (!cfg().reviewBeforeApply) { await doApply(); return }
-
-    // Diff de revisão: mostra atual × proposto e pede confirmação.
-    const full = doc.getText()
-    const modified = full.slice(0, doc.offsetAt(range.start)) + code + full.slice(doc.offsetAt(range.end))
     const base = doc.uri.path.split('/').pop() || 'arquivo'
-    const proposedUri = vscode.Uri.parse(`${DIFF_SCHEME}:${base} (proposto)`).with({ query: String(Date.now()) })
-    diffContents.set(proposedUri.toString(), modified)
-    await vscode.commands.executeCommand('vscode.diff', doc.uri, proposedUri, `Mangaba — revisar: ${base}  (◀ atual | proposto ▶)`)
-    const pick = await vscode.window.showInformationMessage('Aplicar a mudança da Mangaba?', 'Aplicar', 'Cancelar')
-    diffContents.delete(proposedUri.toString())
-    if (pick === 'Aplicar') {
-      await doApply()
-      await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-    }
+    const ok = await this.reviewReplace(doc, range, code, base)
+    if (ok) vscode.window.showInformationMessage('Mangaba: código aplicado (Ctrl/Cmd+Z para desfazer).')
   }
 
   /** Reescreve um trecho conforme a instrução (não-streaming). Usado por "Editar seleção". */
   async rewrite(lang: string, code: string, instruction: string): Promise<string | null> {
-    const c = cfg()
-    if (!c.baseUrl) return null
     const sys = `Você reescreve código. Responda APENAS com o código final em ${lang}, sem explicações e sem cercas markdown.`
     const user = `Instrução: ${instruction}\n\nCódigo atual:\n${code}`
-    try {
-      const res = await fetch(`${c.baseUrl}/chat/completions`, {
-        method: 'POST', headers: authHeaders(c),
-        body: JSON.stringify({
-          model: this.model(),
-          messages: [{ role: 'system', content: sys }, { role: 'user', content: user }],
-          temperature: 0.2, max_tokens: c.maxTokens, stream: false,
-        }),
-      })
-      if (!res.ok) return null
-      const d = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> }
-      let out = d.choices?.[0]?.message?.content ?? ''
-      out = out.replace(/^\s*```[a-zA-Z0-9_-]*\n?/, '').replace(/\n?```\s*$/, '').replace(/\s+$/, '')
-      return out || null
-    } catch { return null }
+    const out = await chatOnce(this.ctx, [{ role: 'system', content: sys }, { role: 'user', content: user }])
+    return out ? (stripFences(out) || null) : null
+  }
+
+  /** Corrige os erros (diagnostics) de um range/arquivo. */
+  async fixDiagnostics(rangeArg?: vscode.Range) {
+    const ed = vscode.window.activeTextEditor
+    if (!ed) { vscode.window.showInformationMessage('Abra um arquivo.'); return }
+    const useSel = !ed.selection.isEmpty
+    const target = rangeArg ?? (useSel ? ed.selection : new vscode.Range(ed.document.positionAt(0), ed.document.positionAt(ed.document.getText().length)))
+    const diags = vscode.languages.getDiagnostics(ed.document.uri).filter((d) => target.intersection(d.range))
+    if (!diags.length) { vscode.window.showInformationMessage('Mangaba: nenhum erro no alvo.'); return }
+    const lang = ed.document.languageId
+    const code = ed.document.getText(target)
+    const problems = diags.map((d) => `- linha ${d.range.start.line + 1}: ${d.message}`).join('\n')
+    await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: 'Mangaba corrigindo os erros…' },
+      async () => {
+        const out = await chatOnce(this.ctx, [
+          { role: 'system', content: `Corrija o código ${lang}. Responda APENAS o código corrigido, sem explicações e sem cercas markdown.` },
+          { role: 'user', content: `Erros a corrigir:\n${problems}\n\nCódigo:\n${code}` },
+        ])
+        if (!out) { vscode.window.showErrorMessage('Mangaba: falha ao corrigir.'); return }
+        await this.reviewReplace(ed.document, target, stripFences(out), (ed.document.uri.path.split('/').pop() || 'arquivo') + ' — correção')
+      },
+    )
   }
 
   /** Agente: dada uma tarefa, o modelo devolve arquivos completos a criar/alterar. */
@@ -313,6 +427,9 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
   <header class="topbar">
     <span class="brand">Mangaba</span>
     <select id="model" class="model-select" title="Escolher modelo"><option>carregando…</option></select>
+    <button id="history" class="icon-btn" title="Conversas salvas" aria-label="Conversas salvas">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2 3.5h12V5H2zM2 7.25h12v1.5H2zM2 11h12v1.5H2z"/></svg>
+    </button>
   </header>
   <div id="messages" class="messages">
     <div class="empty">
@@ -323,6 +440,9 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
   <div id="ctxbar" class="ctxbar"></div>
   <div id="attachments" class="attachments"></div>
   <form id="composer" class="composer">
+    <button id="ctxbtn" type="button" class="icon-btn" title="Adicionar contexto (@): arquivo, seleção, erros" aria-label="Adicionar contexto">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1a7 7 0 1 0 3.2 13.23.75.75 0 1 0-.68-1.34A5.5 5.5 0 1 1 13.5 8c0 .78-.16 1.25-.4 1.5-.22.24-.53.37-.85.37-.31 0-.5-.1-.62-.25-.13-.17-.13-.4-.13-.62V5.25a.75.75 0 0 0-1.42-.34A3 3 0 1 0 10.6 9.7c.1.2.24.38.42.53.4.34.94.51 1.43.51.7 0 1.4-.28 1.92-.83.53-.57.88-1.4.88-2.41A7 7 0 0 0 8 1Zm0 8.5A1.5 1.5 0 1 1 8 6.5a1.5 1.5 0 0 1 0 3Z"/></svg>
+    </button>
     <button id="attach" type="button" class="icon-btn" title="Anexar imagem (use o modelo mangaba-vision-q8)" aria-label="Anexar imagem">
       <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.5 2A1.5 1.5 0 0 0 1 3.5v9A1.5 1.5 0 0 0 2.5 14h11a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 13.5 2h-11Zm0 1h11a.5.5 0 0 1 .5.5v6.29l-2.4-2.4a.75.75 0 0 0-1.06 0L7.5 10.94 5.96 9.4a.75.75 0 0 0-1.06 0L2 12.3V3.5a.5.5 0 0 1 .5-.5Zm3 1.75A1.25 1.25 0 1 0 5.5 7.25 1.25 1.25 0 0 0 5.5 4.75Z"/></svg>
     </button>
@@ -493,6 +613,58 @@ export function activate(ctx: vscode.ExtensionContext) {
         }
       }
       vscode.window.showInformationMessage(`Mangaba (agente): ${applied} de ${files.length} arquivo(s) aplicado(s).`)
+    }),
+    vscode.commands.registerCommand('mangaba.pickContext', () => provider.pickContext()),
+    vscode.commands.registerCommand('mangaba.openHistory', () => provider.openHistory()),
+    vscode.commands.registerCommand('mangaba.fixDiagnostics', (range?: vscode.Range) => provider.fixDiagnostics(range)),
+    vscode.commands.registerCommand('mangaba.generateTests', async () => {
+      const ed = vscode.window.activeTextEditor
+      if (!ed) { vscode.window.showInformationMessage('Abra um arquivo.'); return }
+      const code = ed.selection.isEmpty ? ed.document.getText() : ed.document.getText(ed.selection)
+      const lang = ed.document.languageId
+      await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: 'Mangaba gerando testes…' },
+        async () => {
+          const out = await chatOnce(ctx, [
+            { role: 'system', content: `Você escreve testes automatizados em ${lang}. Responda APENAS o código de teste, sem explicações e sem cercas markdown.` },
+            { role: 'user', content: `Gere testes para:\n${code}` },
+          ])
+          if (!out) { vscode.window.showErrorMessage('Mangaba: falha ao gerar testes.'); return }
+          const doc = await vscode.workspace.openTextDocument({ content: stripFences(out), language: lang })
+          await vscode.window.showTextDocument(doc, vscode.ViewColumn.Beside)
+        },
+      )
+    }),
+    vscode.commands.registerCommand('mangaba.commitMessage', async () => {
+      const gitExt = vscode.extensions.getExtension('vscode.git')
+      if (!gitExt) { vscode.window.showWarningMessage('Extensão Git não encontrada.'); return }
+      if (!gitExt.isActive) await gitExt.activate()
+      const api = gitExt.exports.getAPI(1)
+      const repo = api.repositories[0]
+      if (!repo) { vscode.window.showWarningMessage('Nenhum repositório Git aberto.'); return }
+      await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.SourceControl, title: 'Mangaba: mensagem de commit…' },
+        async () => {
+          let diff: string = await repo.diff(true).catch(() => '')
+          if (!diff) diff = await repo.diff(false).catch(() => '')
+          if (!diff) { vscode.window.showInformationMessage('Sem mudanças para descrever.'); return }
+          const out = await chatOnce(ctx, [
+            { role: 'system', content: 'Gere UMA mensagem de commit concisa (Conventional Commits, imperativa, em português). Responda só a mensagem, sem aspas nem explicação.' },
+            { role: 'user', content: diff.slice(0, cfg().maxContextChars) },
+          ], 0.3)
+          if (!out) { vscode.window.showErrorMessage('Mangaba: falha ao gerar a mensagem.'); return }
+          repo.inputBox.value = out.trim().replace(/^["'`]+|["'`]+$/g, '')
+          vscode.commands.executeCommand('workbench.view.scm')
+        },
+      )
+    }),
+    vscode.languages.registerCodeActionsProvider('*', {
+      provideCodeActions(_doc, range, context) {
+        if (!context.diagnostics.length) return
+        const action = new vscode.CodeAction('🥭 Corrigir com Mangaba', vscode.CodeActionKind.QuickFix)
+        action.command = { command: 'mangaba.fixDiagnostics', title: 'Corrigir com Mangaba', arguments: [range] }
+        return [action]
+      },
     }),
   )
 }

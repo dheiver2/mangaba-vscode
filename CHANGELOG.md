@@ -2,6 +2,11 @@
 
 Todas as mudanças relevantes da extensão **Mangaba AI para VS Code**.
 
+## [0.8.0]
+- **Histórico de conversas** — salva/lista/retoma conversas (botão no topo do chat).
+- **Combo de dev** — Corrigir erros com IA (lâmpada 💡 + comando), Gerar testes, e Gerar mensagem de commit (botão no Source Control).
+- **@-contexto** — botão @ no compositor: adiciona arquivo/seleção/erros/arquivo escolhido como contexto (chips).
+
 ## [0.6.0]
 - **Agente multi-arquivo** — comando *Mangaba AI: Tarefa no projeto (agente)*: descreva uma tarefa e a Mangaba propõe edições em vários arquivos, cada uma revisada em diff antes de aplicar (cria e altera arquivos).
 

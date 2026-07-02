@@ -1,6 +1,6 @@
 # Mangaba AI para VS Code
 
-[![Version](https://img.shields.io/badge/version-0.7.0-E94A12)](https://github.com/dheiver2/mangaba-vscode)
+[![Version](https://img.shields.io/badge/version-0.8.0-E94A12)](https://github.com/dheiver2/mangaba-vscode)
 [![VS Code](https://img.shields.io/badge/VS%20Code-1.85%2B-007ACC?logo=visualstudiocode&logoColor=white)](https://code.visualstudio.com/)
 [![License](https://img.shields.io/badge/license-MIT-3DA639)](LICENSE)
 [![Feito no Brasil](https://img.shields.io/badge/Feito%20no-Brasil-009B3A)](https://mangaba.chat)
@@ -17,6 +17,10 @@
 - **Autocompletar inline (ghost text)** — sugestões enquanto você digita (opt-in em `mangaba.inlineCompletions`; melhor com endpoint rápido).
 - **Agente multi-arquivo** — *Tarefa no projeto (agente)*: descreva uma tarefa e a Mangaba propõe edições em **vários arquivos** (criar/alterar), cada uma revisada em diff antes de aplicar.
 - **Editar seleção (IA)** — selecione um trecho, descreva a mudança (`Ctrl/Cmd+Alt+K`) e a Mangaba reescreve e aplica no lugar.
+- **Histórico de conversas** — salva e retoma conversas (botão no topo do painel).
+- **Corrigir erros com IA** — a lâmpada 💡 oferece *Corrigir com Mangaba* nos erros do editor.
+- **Gerar testes** e **mensagem de commit** — comandos prontos (o commit preenche o Source Control a partir do `git diff`).
+- **@-contexto** — botão `@` no compositor adiciona arquivo, seleção, erros ou um arquivo escolhido como contexto.
 - **Explicar seleção** — selecione um trecho no editor e explique em português (menu de contexto ou atalho).
 - **Soberano por padrão** — as chamadas saem do host da extensão (Node), não do webview: sem CORS e sem expor URL/credencial no cliente.
 - **Nativo do tema** — usa as cores do seu tema do VS Code (claro/escuro), com acento laranja da marca.
