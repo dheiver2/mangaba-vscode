@@ -7,7 +7,15 @@ let extractorPromise: Promise<(t: string, o: object) => Promise<{ data: Float32A
 async function getExtractor() {
   if (!extractorPromise) {
     extractorPromise = (async () => {
-      const mod = await import('@xenova/transformers')
+      let mod: typeof import('@xenova/transformers')
+      try {
+        mod = await import('@xenova/transformers')
+      } catch {
+        throw new Error(
+          'RAG local (transformers.js) não está incluído nesta build. ' +
+          'Use a build self-contained, ou configure "mangaba.embeddingsBackend": "ollama" (ollama pull nomic-embed-text).',
+        )
+      }
       ;(mod.env as { allowLocalModels?: boolean }).allowLocalModels = false
       return mod.pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2') as unknown as (t: string, o: object) => Promise<{ data: Float32Array }>
     })()
