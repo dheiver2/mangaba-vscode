@@ -31,7 +31,10 @@ jobs:
       - run: npm ci
       - run: npm run build
       - name: Publish (${{ matrix.target }})
-        run: npx --yes @vscode/vsce publish --target ${{ matrix.target }} -p ${{ secrets.VSCE_PAT }}
+        if: ${{ env.VSCE_PAT != '' }}
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: npx --yes @vscode/vsce publish --target ${{ matrix.target }} -p "$VSCE_PAT"
 
   # 2) Build UNIVERSAL leve — fallback para plataformas não listadas acima.
   #    RAG via Ollama (mangaba.embeddingsBackend = ollama).
@@ -44,4 +47,7 @@ jobs:
       - run: npm ci
       - run: npm run build
       - name: Publish (universal, leve)
-        run: npx --yes @vscode/vsce publish --no-dependencies -p ${{ secrets.VSCE_PAT }}
+        if: ${{ env.VSCE_PAT != '' }}
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: npx --yes @vscode/vsce publish --no-dependencies -p "$VSCE_PAT"
