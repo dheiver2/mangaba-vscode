@@ -71,6 +71,36 @@ body {
   padding: 1px 5px; border-radius: 4px;
 }
 
+/* bloco de código com barra de ações (Aplicar/Inserir/Copiar) */
+.code-wrap {
+  margin: 8px 0; border-radius: 8px; overflow: hidden;
+  border: 1px solid var(--vscode-panel-border, rgba(128,128,128,.25));
+}
+.code-wrap pre { margin: 0; border: none; border-radius: 0; }
+.code-bar {
+  display: flex; gap: 4px; justify-content: flex-end;
+  padding: 4px 6px;
+  background: var(--vscode-editorGroupHeader-tabsBackground, rgba(128,128,128,.1));
+  border-bottom: 1px solid var(--vscode-panel-border, rgba(128,128,128,.2));
+}
+.code-act {
+  border: none; cursor: pointer; border-radius: 5px;
+  padding: 2px 8px; font-size: 11px; font-family: inherit;
+  color: var(--vscode-foreground); background: transparent; opacity: .8;
+}
+.code-act:hover { opacity: 1; background: var(--vscode-toolbar-hoverBackground, rgba(128,128,128,.16)); }
+.code-act[data-act="apply"] { color: var(--mangaba); font-weight: 600; }
+
+/* chip de contexto (arquivo/seleção enviado ao modelo) */
+.ctxbar { padding: 0 10px; }
+.ctxbar:not(:empty) { padding-top: 6px; }
+.ctx-chip {
+  display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px;
+  color: var(--vscode-descriptionForeground, var(--vscode-foreground));
+  background: color-mix(in srgb, var(--mangaba) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mangaba) 30%, transparent);
+}
+
 /* typing dots */
 .dots i {
   display: inline-block; width: 5px; height: 5px; margin-right: 3px;

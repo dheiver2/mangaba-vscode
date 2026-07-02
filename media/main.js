@@ -19,7 +19,29 @@
   const $file = document.getElementById('file')
   const $attachments = document.getElementById('attachments')
 
+  const $ctxbar = document.getElementById('ctxbar')
   let pendingImage = null // dataURL da imagem anexada
+
+  // Pede o contexto do editor (arquivo/seleção) ao host.
+  vscode.postMessage({ type: 'getContext' })
+
+  // Botões dos blocos de código (delegação): Aplicar / Inserir / Copiar.
+  $messages.addEventListener('click', (e) => {
+    const btn = e.target && e.target.closest ? e.target.closest('.code-act') : null
+    if (!btn) return
+    const wrap = btn.closest('.code-wrap')
+    if (!wrap) return
+    const code = decodeURIComponent(wrap.getAttribute('data-code') || '')
+    const act = btn.getAttribute('data-act')
+    if (act === 'copy') {
+      if (navigator.clipboard) navigator.clipboard.writeText(code)
+      flash(btn, 'Copiado', 'Copiar')
+    } else {
+      vscode.postMessage({ type: 'apply', code: code, mode: act === 'insert' ? 'insert' : 'replaceSelection' })
+      flash(btn, act === 'insert' ? 'Inserido' : 'Aplicado', act === 'insert' ? 'Inserir' : 'Aplicar')
+    }
+  })
+  function flash(btn, on, off) { btn.textContent = on; setTimeout(() => { btn.textContent = off }, 1400) }
 
   // Pede ao host a lista de modelos do servidor Mangaba (/v1/models).
   vscode.postMessage({ type: 'getModels' })
@@ -75,7 +97,12 @@
     for (let i = 0; i < parts.length; i++) {
       if (i % 2 === 1) {
         const body = parts[i].replace(/^[a-zA-Z0-9_-]*\n/, '')
-        out += `<pre><code>${escapeHtml(body)}</code></pre>`
+        out += '<div class="code-wrap" data-code="' + encodeURIComponent(body) + '">' +
+          '<div class="code-bar">' +
+          '<button class="code-act" data-act="apply" title="Substituir a seleção (ou inserir no cursor)">Aplicar</button>' +
+          '<button class="code-act" data-act="insert" title="Inserir no cursor">Inserir</button>' +
+          '<button class="code-act" data-act="copy" title="Copiar">Copiar</button>' +
+          '</div><pre><code>' + escapeHtml(body) + '</code></pre></div>'
       } else {
         out += escapeHtml(parts[i])
           .replace(/`([^`]+)`/g, '<code>$1</code>')
@@ -201,6 +228,13 @@
         opt.textContent = id
         if (id === m.current) opt.selected = true
         $model.appendChild(opt)
+      }
+    } else if (m.type === 'context') {
+      if (m.ctx) {
+        $ctxbar.innerHTML = '<span class="ctx-chip" title="Enviado ao modelo como contexto">◧ ' +
+          escapeHtml(m.ctx.file) + (m.ctx.hasSel ? ' · seleção' : '') + '</span>'
+      } else {
+        $ctxbar.innerHTML = ''
       }
     } else if (m.type === 'prompt') {
       send(m.text)

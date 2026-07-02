@@ -2,7 +2,7 @@
   "name": "mangaba-ai",
   "displayName": "Mangaba AI",
   "description": "Chat com a IA brasileira e soberana Mangaba, dentro do VS Code — powered pelos modelos self-hosted (OpenAI-compatível).",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "publisher": "mangaba",
   "icon": "media/icon-128.png",
   "license": "MIT",
@@ -29,18 +29,21 @@
     "commands": [
       { "command": "mangaba.openChat", "title": "Abrir chat", "category": "Mangaba AI" },
       { "command": "mangaba.newChat", "title": "Nova conversa", "category": "Mangaba AI", "icon": "$(add)" },
-      { "command": "mangaba.explainSelection", "title": "Explicar seleção", "category": "Mangaba AI", "icon": "$(sparkle)" }
+      { "command": "mangaba.explainSelection", "title": "Explicar seleção", "category": "Mangaba AI", "icon": "$(sparkle)" },
+      { "command": "mangaba.editSelection", "title": "Editar seleção (IA)", "category": "Mangaba AI", "icon": "$(wand)" }
     ],
     "keybindings": [
       { "command": "mangaba.openChat", "key": "ctrl+alt+m", "mac": "cmd+alt+m" },
-      { "command": "mangaba.explainSelection", "key": "ctrl+alt+e", "mac": "cmd+alt+e", "when": "editorHasSelection" }
+      { "command": "mangaba.explainSelection", "key": "ctrl+alt+e", "mac": "cmd+alt+e", "when": "editorHasSelection" },
+      { "command": "mangaba.editSelection", "key": "ctrl+alt+k", "mac": "cmd+alt+k", "when": "editorHasSelection" }
     ],
     "menus": {
       "view/title": [
         { "command": "mangaba.newChat", "when": "view == mangaba.chatView", "group": "navigation" }
       ],
       "editor/context": [
-        { "command": "mangaba.explainSelection", "when": "editorHasSelection", "group": "1_mangaba" }
+        { "command": "mangaba.editSelection", "when": "editorHasSelection", "group": "1_mangaba@1" },
+        { "command": "mangaba.explainSelection", "when": "editorHasSelection", "group": "1_mangaba@2" }
       ],
       "commandPalette": [
         { "command": "mangaba.newChat", "when": "false" }
@@ -83,6 +86,16 @@
           "type": "number", "default": 4096, "minimum": 1,
           "markdownDescription": "Máximo de tokens na resposta.",
           "order": 5
+        },
+        "mangaba.includeActiveFile": {
+          "type": "boolean", "default": true,
+          "markdownDescription": "Envia o **arquivo/seleção ativos** como contexto para o chat, para o modelo entender o código que você está escrevendo.",
+          "order": 6
+        },
+        "mangaba.maxContextChars": {
+          "type": "number", "default": 6000, "minimum": 500,
+          "markdownDescription": "Máximo de caracteres do arquivo enviados como contexto (evita estourar a janela do modelo).",
+          "order": 7
         }
       }
     },
