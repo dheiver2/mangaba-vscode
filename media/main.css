@@ -78,11 +78,16 @@ body {
 }
 .code-wrap pre { margin: 0; border: none; border-radius: 0; }
 .code-bar {
-  display: flex; gap: 4px; justify-content: flex-end;
-  padding: 4px 6px;
+  display: flex; gap: 4px; align-items: center; justify-content: space-between;
+  padding: 3px 6px 3px 10px;
   background: var(--vscode-editorGroupHeader-tabsBackground, rgba(128,128,128,.1));
   border-bottom: 1px solid var(--vscode-panel-border, rgba(128,128,128,.2));
 }
+.code-lang {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
+  opacity: .6; font-family: var(--vscode-editor-font-family, monospace);
+}
+.code-acts { display: flex; gap: 4px; }
 .code-act {
   border: none; cursor: pointer; border-radius: 5px;
   padding: 2px 8px; font-size: 11px; font-family: inherit;
@@ -178,3 +183,34 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .dots i, .send-btn, .composer { animation: none !important; transition: none !important; }
 }
+
+/* ── Markdown rico ─────────────────────────────────────────────── */
+.bubble h1, .bubble h2, .bubble h3, .bubble h4 { margin: 10px 0 6px; line-height: 1.25; font-weight: 600; }
+.bubble h1 { font-size: 1.28em; } .bubble h2 { font-size: 1.16em; }
+.bubble h3 { font-size: 1.05em; } .bubble h4 { font-size: .96em; }
+.bubble p { margin: 6px 0; }
+.bubble p:first-child { margin-top: 0; } .bubble p:last-child { margin-bottom: 0; }
+.bubble ul, .bubble ol { margin: 6px 0; padding-left: 20px; }
+.bubble li { margin: 2px 0; }
+.bubble blockquote { margin: 6px 0; padding: 2px 10px; border-left: 3px solid var(--mangaba); opacity: .85; }
+.bubble hr { border: none; border-top: 1px solid var(--vscode-panel-border, rgba(128,128,128,.3)); margin: 10px 0; }
+.bubble a { color: var(--mangaba); text-decoration: none; }
+.bubble a:hover { text-decoration: underline; }
+
+/* ── highlight.js — tema escuro (One Dark) ─────────────────────── */
+.vscode-dark .hljs-comment, .vscode-dark .hljs-quote { color: #7f848e; font-style: italic; }
+.vscode-dark .hljs-keyword, .vscode-dark .hljs-selector-tag, .vscode-dark .hljs-literal, .vscode-dark .hljs-doctag { color: #c678dd; }
+.vscode-dark .hljs-string, .vscode-dark .hljs-regexp, .vscode-dark .hljs-addition, .vscode-dark .hljs-attribute { color: #98c379; }
+.vscode-dark .hljs-number, .vscode-dark .hljs-literal, .vscode-dark .hljs-type, .vscode-dark .hljs-params, .vscode-dark .hljs-meta { color: #d19a66; }
+.vscode-dark .hljs-title, .vscode-dark .hljs-section, .vscode-dark .hljs-built_in, .vscode-dark .hljs-function .hljs-title { color: #61afef; }
+.vscode-dark .hljs-attr, .vscode-dark .hljs-variable, .vscode-dark .hljs-template-variable, .vscode-dark .hljs-name, .vscode-dark .hljs-selector-id { color: #e06c75; }
+.vscode-dark .hljs-class .hljs-title, .vscode-dark .hljs-tag { color: #e5c07b; }
+
+/* ── highlight.js — tema claro (One Light) ─────────────────────── */
+.vscode-light .hljs-comment, .vscode-light .hljs-quote { color: #a0a1a7; font-style: italic; }
+.vscode-light .hljs-keyword, .vscode-light .hljs-selector-tag, .vscode-light .hljs-doctag { color: #a626a4; }
+.vscode-light .hljs-string, .vscode-light .hljs-regexp, .vscode-light .hljs-addition, .vscode-light .hljs-attribute { color: #50a14f; }
+.vscode-light .hljs-number, .vscode-light .hljs-literal, .vscode-light .hljs-type, .vscode-light .hljs-params, .vscode-light .hljs-meta { color: #986801; }
+.vscode-light .hljs-title, .vscode-light .hljs-section, .vscode-light .hljs-built_in, .vscode-light .hljs-function .hljs-title { color: #4078f2; }
+.vscode-light .hljs-attr, .vscode-light .hljs-variable, .vscode-light .hljs-template-variable, .vscode-light .hljs-name, .vscode-light .hljs-selector-id { color: #e45649; }
+.vscode-light .hljs-class .hljs-title, .vscode-light .hljs-tag { color: #c18401; }

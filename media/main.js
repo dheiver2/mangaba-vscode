@@ -88,29 +88,74 @@
 
   function escapeHtml(s) {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;')
   }
 
-  /** Markdown mínimo: blocos de código + inline code + quebras de linha. */
+  // Formatação inline (tudo escapado antes) — negrito, itálico, code, links.
+  function inline(s) {
+    s = escapeHtml(s)
+    s = s.replace(/`([^`]+)`/g, '<code>$1</code>')
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    s = s.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+    s = s.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2">$1</a>')
+    return s
+  }
+
+  // Blocos de texto: títulos, listas, citações, régua, parágrafos.
+  function renderText(seg) {
+    const lines = seg.split('\n')
+    let html = '', list = null, para = []
+    const flushPara = () => { if (para.length) { html += '<p>' + para.map(inline).join('<br/>') + '</p>'; para = [] } }
+    const closeList = () => { if (list) { html += '</' + list + '>'; list = null } }
+    for (const line of lines) {
+      let m
+      if (/^\s*$/.test(line)) { flushPara(); closeList(); continue }
+      if ((m = line.match(/^(#{1,4})\s+(.*)$/))) { flushPara(); closeList(); const l = m[1].length; html += '<h' + l + '>' + inline(m[2]) + '</h' + l + '>'; continue }
+      if (/^\s*([-*_])\1{2,}\s*$/.test(line)) { flushPara(); closeList(); html += '<hr/>'; continue }
+      if ((m = line.match(/^\s*>\s?(.*)$/))) { flushPara(); closeList(); html += '<blockquote>' + inline(m[1]) + '</blockquote>'; continue }
+      if ((m = line.match(/^\s*[-*+]\s+(.*)$/))) { flushPara(); if (list !== 'ul') { closeList(); html += '<ul>'; list = 'ul' } html += '<li>' + inline(m[1]) + '</li>'; continue }
+      if ((m = line.match(/^\s*\d+[.)]\s+(.*)$/))) { flushPara(); if (list !== 'ol') { closeList(); html += '<ol>'; list = 'ol' } html += '<li>' + inline(m[1]) + '</li>'; continue }
+      if (list) closeList()
+      para.push(line)
+    }
+    flushPara(); closeList()
+    return html
+  }
+
+  /** Markdown: blocos de código (com rótulo + ações) + texto rico. */
   function renderMarkdown(text) {
     const parts = text.split(/```/)
     let out = ''
     for (let i = 0; i < parts.length; i++) {
       if (i % 2 === 1) {
-        const body = parts[i].replace(/^[a-zA-Z0-9_-]*\n/, '')
+        const mm = parts[i].match(/^([a-zA-Z0-9_+#.-]*)\n?([\s\S]*)$/)
+        const lang = (mm && mm[1]) || ''
+        const body = (mm ? mm[2] : parts[i])
+        const cls = lang ? ' class="language-' + lang.toLowerCase() + '"' : ''
         out += '<div class="code-wrap" data-code="' + encodeURIComponent(body) + '">' +
           '<div class="code-bar">' +
+          '<span class="code-lang">' + escapeHtml(lang || 'código') + '</span>' +
+          '<span class="code-acts">' +
           '<button class="code-act" data-act="apply" title="Substituir a seleção (ou inserir no cursor)">Aplicar</button>' +
           '<button class="code-act" data-act="insert" title="Inserir no cursor">Inserir</button>' +
           '<button class="code-act" data-act="copy" title="Copiar">Copiar</button>' +
-          '</div><pre><code>' + escapeHtml(body) + '</code></pre></div>'
+          '</span></div><pre><code' + cls + '>' + escapeHtml(body) + '</code></pre></div>'
       } else {
-        out += escapeHtml(parts[i])
-          .replace(/`([^`]+)`/g, '<code>$1</code>')
-          .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-          .replace(/\n/g, '<br/>')
+        out += renderText(parts[i])
       }
     }
     return out
+  }
+
+  // Aplica syntax highlighting nos blocos de código de um elemento (uma vez).
+  function highlightIn(el) {
+    if (!el || typeof hljs === 'undefined') return
+    const blocks = el.querySelectorAll('pre code')
+    for (const c of blocks) {
+      if (c.getAttribute('data-hl')) continue
+      try { hljs.highlightElement(c) } catch (_) { /* ignora */ }
+      c.setAttribute('data-hl', '1')
+    }
   }
 
   function clearEmpty() {
@@ -137,6 +182,7 @@
     bubble.innerHTML = contentToHtml(content)
     el.appendChild(bubble)
     $messages.appendChild(el)
+    highlightIn(bubble)
     $messages.scrollTop = $messages.scrollHeight
     return bubble
   }
@@ -199,6 +245,7 @@
       if (curEl) curEl.innerHTML = renderMarkdown(last.content)
       $messages.scrollTop = $messages.scrollHeight
     } else if (m.type === 'done') {
+      if (curEl) highlightIn(curEl)
       setStreaming(false)
       curEl = null
     } else if (m.type === 'error') {

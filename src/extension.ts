@@ -293,6 +293,7 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
     const scriptUri = wv.asWebviewUri(vscode.Uri.joinPath(this.ctx.extensionUri, 'media', 'main.js'))
     const styleUri  = wv.asWebviewUri(vscode.Uri.joinPath(this.ctx.extensionUri, 'media', 'main.css'))
     const logoUri   = wv.asWebviewUri(vscode.Uri.joinPath(this.ctx.extensionUri, 'media', 'logo.svg'))
+    const hljsUri   = wv.asWebviewUri(vscode.Uri.joinPath(this.ctx.extensionUri, 'media', 'highlight.min.js'))
     const csp = [
       `default-src 'none'`,
       `img-src ${wv.cspSource} data:`,
@@ -329,6 +330,7 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
     <button id="send" type="submit" class="send-btn" title="Enviar" aria-label="Enviar"></button>
   </form>
   <input id="file" type="file" accept="image/*" hidden />
+  <script nonce="${nonce}" src="${hljsUri}"></script>
   <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
 </html>`
