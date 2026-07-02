@@ -14,6 +14,13 @@
   const $input = document.getElementById('input')
   const $form = document.getElementById('composer')
   const $send = document.getElementById('send')
+  const $model = document.getElementById('model')
+
+  // Pede ao host a lista de modelos do servidor Mangaba (/v1/models).
+  vscode.postMessage({ type: 'getModels' })
+  $model.addEventListener('change', () => {
+    vscode.postMessage({ type: 'setModel', model: $model.value })
+  })
 
   /** @type {{role:string,content:string}[]} */
   let history = [SYSTEM]
@@ -125,6 +132,15 @@
         '<p class="hint">Nova conversa.</p></div>'
       setStreaming(false)
       curEl = null
+    } else if (m.type === 'models') {
+      $model.innerHTML = ''
+      for (const id of m.models) {
+        const opt = document.createElement('option')
+        opt.value = id
+        opt.textContent = id
+        if (id === m.current) opt.selected = true
+        $model.appendChild(opt)
+      }
     } else if (m.type === 'prompt') {
       send(m.text)
     }

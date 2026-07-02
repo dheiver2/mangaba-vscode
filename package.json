@@ -2,7 +2,7 @@
   "name": "mangaba-ai",
   "displayName": "Mangaba AI",
   "description": "Chat com a IA brasileira e soberana Mangaba, dentro do VS Code — powered pelos modelos self-hosted (OpenAI-compatível).",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "mangaba",
   "icon": "media/icon-128.png",
   "license": "MIT",
@@ -49,7 +49,7 @@
         "mangaba.model": {
           "type": "string",
           "default": "mangaba-pro",
-          "description": "Modelo padrão (ex.: mangaba-pro, mangaba-max, mangaba-lite-q4)."
+          "description": "Modelo padrão inicial. O seletor no topo do chat lista os modelos do servidor (/v1/models) e sobrepõe esta opção."
         },
         "mangaba.apiKey": {
           "type": "string",

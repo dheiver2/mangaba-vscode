@@ -10,6 +10,21 @@ body {
   background: var(--vscode-sideBar-background, var(--vscode-editor-background));
 }
 
+.topbar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--vscode-panel-border, rgba(128,128,128,.25));
+}
+.topbar .brand { font-size: 12px; font-weight: 600; color: var(--mangaba); white-space: nowrap; }
+.model-select {
+  margin-left: auto; max-width: 60%;
+  padding: 3px 6px; border-radius: 6px; font-size: 12px;
+  color: var(--vscode-dropdown-foreground, var(--vscode-foreground));
+  background: var(--vscode-dropdown-background, var(--vscode-input-background));
+  border: 1px solid var(--vscode-dropdown-border, var(--vscode-input-border, rgba(128,128,128,.3)));
+}
+.model-select:focus { outline: none; border-color: var(--mangaba); }
+
 .messages { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
 
 .empty { margin: auto; text-align: center; opacity: 0.9; padding: 16px; }

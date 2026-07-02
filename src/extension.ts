@@ -24,10 +24,41 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
     this.view = view
     view.webview.options = { enableScripts: true, localResourceRoots: [this.ctx.extensionUri] }
     view.webview.html = this.html(view.webview)
-    view.webview.onDidReceiveMessage(async (m: { type: string; history?: Msg[] }) => {
+    view.webview.onDidReceiveMessage(async (m: { type: string; history?: Msg[]; model?: string }) => {
       if (m.type === 'send' && m.history) await this.stream(m.history)
       else if (m.type === 'stop') this.abort?.abort()
+      else if (m.type === 'getModels') await this.sendModels()
+      else if (m.type === 'setModel' && m.model) await this.ctx.globalState.update('mangaba.model', m.model)
     })
+  }
+
+  /** Modelo ativo: o que o usuário escolheu (persistido) ou o default da config. */
+  private model(): string {
+    return this.ctx.globalState.get<string>('mangaba.model') || cfg().model
+  }
+
+  /** Busca os modelos disponíveis no servidor Mangaba (/v1/models) e envia ao webview. */
+  private async sendModels() {
+    const wv = this.view?.webview
+    if (!wv) return
+    const c = cfg()
+    let ids: string[] = []
+    if (c.baseUrl) {
+      try {
+        const res = await fetch(`${c.baseUrl}/models`, {
+          headers: {
+            'ngrok-skip-browser-warning': '1',
+            ...(c.apiKey ? { Authorization: `Bearer ${c.apiKey}` } : {}),
+          },
+        })
+        if (res.ok) {
+          const d = (await res.json()) as { data?: Array<{ id?: string }> }
+          ids = (d.data ?? []).map((x) => x.id || '').filter(Boolean)
+        }
+      } catch { /* offline / sem modelos — usa fallback */ }
+    }
+    if (!ids.length) ids = [c.model]
+    wv.postMessage({ type: 'models', models: ids, current: this.model() })
   }
 
   /** Abre o painel e limpa a conversa. */
@@ -66,7 +97,7 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
           ...(c.apiKey ? { Authorization: `Bearer ${c.apiKey}` } : {}),
         },
         body: JSON.stringify({
-          model: c.model, messages: history,
+          model: this.model(), messages: history,
           temperature: c.temperature, max_tokens: c.maxTokens, stream: true,
         }),
         signal: this.abort.signal,
@@ -128,6 +159,10 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
   <link href="${styleUri}" rel="stylesheet" />
 </head>
 <body data-logo="${logoUri}">
+  <header class="topbar">
+    <span class="brand">🥭 Mangaba</span>
+    <select id="model" class="model-select" title="Escolher modelo"><option>carregando…</option></select>
+  </header>
   <div id="messages" class="messages">
     <div class="empty">
       <img class="logo-img" src="${logoUri}" alt="Mangaba AI" />
