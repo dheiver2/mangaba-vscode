@@ -10,6 +10,8 @@ on:
 jobs:
   # 1) Builds self-contained POR PLATAFORMA — RAG embutido (transformers.js) funciona
   #    de fábrica, pois cada runner traz o binário nativo do onnxruntime.
+  #    (Sem darwin-x64: runners macos-13/Intel foram aposentados pela GitHub e
+  #    ficam presos na fila; Macs Intel recebem a build universal.)
   platform:
     strategy:
       fail-fast: false
@@ -17,8 +19,6 @@ jobs:
         include:
           - os: macos-14
             target: darwin-arm64
-          - os: macos-13
-            target: darwin-x64
           - os: windows-latest
             target: win32-x64
           - os: ubuntu-latest
@@ -35,7 +35,8 @@ jobs:
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
         # vsce lê VSCE_PAT do ambiente (cross-platform: bash e PowerShell).
-        run: npx --yes @vscode/vsce publish --target ${{ matrix.target }}
+        # --skip-duplicate: rerun/dispatch não falha se a versão já existir.
+        run: npx --yes @vscode/vsce publish --target ${{ matrix.target }} --skip-duplicate
 
   # 2) Build UNIVERSAL leve — fallback para plataformas não listadas acima.
   #    RAG via Ollama (mangaba.embeddingsBackend = ollama).
@@ -52,4 +53,4 @@ jobs:
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
         # vsce lê VSCE_PAT do ambiente (cross-platform: bash e PowerShell).
-        run: npx --yes @vscode/vsce publish --no-dependencies
+        run: npx --yes @vscode/vsce publish --no-dependencies --skip-duplicate
