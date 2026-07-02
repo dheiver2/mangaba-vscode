@@ -1,6 +1,6 @@
 # Mangaba AI para VS Code
 
-[![Version](https://img.shields.io/badge/version-0.8.0-E94A12)](https://github.com/dheiver2/mangaba-vscode)
+[![Version](https://img.shields.io/badge/version-0.9.0-E94A12)](https://github.com/dheiver2/mangaba-vscode)
 [![VS Code](https://img.shields.io/badge/VS%20Code-1.85%2B-007ACC?logo=visualstudiocode&logoColor=white)](https://code.visualstudio.com/)
 [![License](https://img.shields.io/badge/license-MIT-3DA639)](LICENSE)
 [![Feito no Brasil](https://img.shields.io/badge/Feito%20no-Brasil-009B3A)](https://mangaba.chat)
@@ -20,6 +20,7 @@
 - **Histórico de conversas** — salva e retoma conversas (botão no topo do painel).
 - **Corrigir erros com IA** — a lâmpada 💡 oferece *Corrigir com Mangaba* nos erros do editor.
 - **Gerar testes** e **mensagem de commit** — comandos prontos (o commit preenche o Source Control a partir do `git diff`).
+- **RAG @codebase** — *Indexar projeto* embeda o repositório com **embeddings 100% locais** (transformers.js); o chat recupera automaticamente os trechos relevantes. Nada sai da máquina.
 - **@-contexto** — botão `@` no compositor adiciona arquivo, seleção, erros ou um arquivo escolhido como contexto.
 - **Explicar seleção** — selecione um trecho no editor e explique em português (menu de contexto ou atalho).
 - **Soberano por padrão** — as chamadas saem do host da extensão (Node), não do webview: sem CORS e sem expor URL/credencial no cliente.

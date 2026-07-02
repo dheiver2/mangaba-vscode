@@ -11,7 +11,7 @@ async function main() {
     platform: 'node',
     target: 'node18',
     outfile: 'dist/extension.js',
-    external: ['vscode'],
+    external: ['vscode', '@xenova/transformers', 'onnxruntime-node', 'sharp'],
     sourcemap: !production,
     minify: production,
     logLevel: 'info',

@@ -1,7 +1,9 @@
 .vscode/**
 src/**
-node_modules/**
 esbuild.js
 tsconfig.json
 .gitignore
 **/*.map
+node_modules/.bin/**
+node_modules/**/{test,tests,example,examples,docs,doc,.github}/**
+node_modules/**/*.md

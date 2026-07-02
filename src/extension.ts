@@ -1,4 +1,5 @@
 import * as vscode from 'vscode'
+import { CodeIndex } from './rag'
 
 type ContentPart = { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }
 interface Msg { role: 'system' | 'user' | 'assistant'; content: string | ContentPart[] }
@@ -15,7 +16,19 @@ function cfg() {
     maxContextChars:  c.get<number>('maxContextChars') ?? 6000,
     reviewBeforeApply: c.get<boolean>('reviewBeforeApply') ?? true,
     inlineCompletions: c.get<boolean>('inlineCompletions') ?? false,
+    useCodebaseContext: c.get<boolean>('useCodebaseContext') ?? true,
   }
+}
+
+function lastUserText(history: Msg[]): string {
+  for (let i = history.length - 1; i >= 0; i--) {
+    const m = history[i]
+    if (m.role !== 'user') continue
+    if (typeof m.content === 'string') return m.content
+    const t = m.content.find((p) => p.type === 'text')
+    return t && 'text' in t ? t.text : ''
+  }
+  return ''
 }
 
 // Documento virtual usado no diff de revisão ("proposto").
@@ -68,9 +81,11 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
   private lastEditor?: vscode.TextEditor
   private pendingRefs: string[] = []      // notas de contexto (@) para o próximo envio
   private pendingChips: string[] = []
+  readonly index: CodeIndex
 
   constructor(private readonly ctx: vscode.ExtensionContext) {
     this.lastEditor = vscode.window.activeTextEditor
+    this.index = new CodeIndex(ctx)
   }
 
   resolveWebviewView(view: vscode.WebviewView) {
@@ -126,16 +141,33 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
     this.view?.webview.postMessage({ type: 'context', ctx: chip ?? null })
   }
 
-  /** Insere o contexto do editor + as @-refs como system message antes do turno atual. */
-  private withContext(history: Msg[]): Msg[] {
+  /** Insere contexto do editor + @-refs + RAG @codebase antes do turno atual. */
+  private async withContext(history: Msg[]): Promise<Msg[]> {
     const notes: string[] = []
     const { note } = this.editorContext()
     if (note) notes.push(note)
     if (this.pendingRefs.length) notes.push(...this.pendingRefs)
-    // consome as @-refs (valem para um envio)
     this.pendingRefs = []
     this.pendingChips = []
     this.postRefs()
+
+    // RAG @codebase — recupera trechos relevantes do índice local.
+    if (cfg().useCodebaseContext) {
+      try {
+        await this.index.load()
+        if (this.index.size()) {
+          const q = lastUserText(history)
+          if (q) {
+            const hits = await this.index.search(q, 5)
+            if (hits.length) {
+              notes.push('Trechos relevantes do código-base (recuperados por similaridade):\n' +
+                hits.map((h) => '// ' + h.file + '\n' + h.text).join('\n\n'))
+            }
+          }
+        }
+      } catch { /* índice indisponível */ }
+    }
+
     if (!notes.length) return history
     const copy = history.slice()
     copy.splice(Math.max(0, copy.length - 1), 0, { role: 'system', content: notes.join('\n\n') })
@@ -361,7 +393,7 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
       const res = await fetch(`${c.baseUrl}/chat/completions`, {
         method: 'POST', headers: authHeaders(c),
         body: JSON.stringify({
-          model: this.model(), messages: this.withContext(history),
+          model: this.model(), messages: await this.withContext(history),
           temperature: c.temperature, max_tokens: c.maxTokens, stream: true,
         }),
         signal: this.abort.signal,
@@ -616,6 +648,22 @@ export function activate(ctx: vscode.ExtensionContext) {
     }),
     vscode.commands.registerCommand('mangaba.pickContext', () => provider.pickContext()),
     vscode.commands.registerCommand('mangaba.openHistory', () => provider.openHistory()),
+    vscode.commands.registerCommand('mangaba.indexProject', async () => {
+      if (!vscode.workspace.workspaceFolders?.length) { vscode.window.showWarningMessage('Abra uma pasta/projeto para indexar.'); return }
+      await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: 'Mangaba: indexando o projeto (embeddings locais)…', cancellable: false },
+        async (progress) => {
+          try {
+            const r = await provider.index.build(progress)
+            vscode.window.showInformationMessage(
+              `Mangaba: índice pronto — ${r.chunks} trechos de ${r.files} arquivos${r.truncated ? ' (limitado a 2500)' : ''}. O chat agora usa @codebase.`,
+            )
+          } catch (e) {
+            vscode.window.showErrorMessage('Mangaba: falha ao indexar — ' + ((e as Error).message || String(e)))
+          }
+        },
+      )
+    }),
     vscode.commands.registerCommand('mangaba.fixDiagnostics', (range?: vscode.Range) => provider.fixDiagnostics(range)),
     vscode.commands.registerCommand('mangaba.generateTests', async () => {
       const ed = vscode.window.activeTextEditor

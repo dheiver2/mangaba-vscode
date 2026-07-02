@@ -2,61 +2,182 @@
   "name": "mangaba-ai",
   "displayName": "Mangaba AI",
   "description": "Chat com a IA brasileira e soberana Mangaba, dentro do VS Code — powered pelos modelos self-hosted (OpenAI-compatível).",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "publisher": "mangaba",
   "icon": "media/icon-128.png",
   "license": "MIT",
-  "repository": { "type": "git", "url": "https://github.com/dheiver2/mangaba-vscode.git" },
-  "bugs": { "url": "https://github.com/dheiver2/mangaba-vscode/issues" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dheiver2/mangaba-vscode.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dheiver2/mangaba-vscode/issues"
+  },
   "homepage": "https://mangaba.chat",
-  "engines": { "vscode": "^1.85.0" },
-  "categories": ["AI", "Chat", "Machine Learning"],
-  "keywords": ["mangaba", "ai", "chat", "brasil", "llm", "copilot", "soberana"],
-  "galleryBanner": { "color": "#1E0D01", "theme": "dark" },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "AI",
+    "Chat",
+    "Machine Learning"
+  ],
+  "keywords": [
+    "mangaba",
+    "ai",
+    "chat",
+    "brasil",
+    "llm",
+    "copilot",
+    "soberana"
+  ],
+  "galleryBanner": {
+    "color": "#1E0D01",
+    "theme": "dark"
+  },
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
     "viewsContainers": {
       "activitybar": [
-        { "id": "mangaba", "title": "Mangaba AI", "icon": "media/icon.svg" }
+        {
+          "id": "mangaba",
+          "title": "Mangaba AI",
+          "icon": "media/icon.svg"
+        }
       ]
     },
     "views": {
       "mangaba": [
-        { "type": "webview", "id": "mangaba.chatView", "name": "Chat" }
+        {
+          "type": "webview",
+          "id": "mangaba.chatView",
+          "name": "Chat"
+        }
       ]
     },
     "commands": [
-      { "command": "mangaba.openChat", "title": "Abrir chat", "category": "Mangaba AI" },
-      { "command": "mangaba.newChat", "title": "Nova conversa", "category": "Mangaba AI", "icon": "$(add)" },
-      { "command": "mangaba.explainSelection", "title": "Explicar seleção", "category": "Mangaba AI", "icon": "$(sparkle)" },
-      { "command": "mangaba.editSelection", "title": "Editar seleção (IA)", "category": "Mangaba AI", "icon": "$(wand)" },
-      { "command": "mangaba.agentTask", "title": "Tarefa no projeto (agente)", "category": "Mangaba AI", "icon": "$(rocket)" },
-      { "command": "mangaba.generateTests", "title": "Gerar testes", "category": "Mangaba AI", "icon": "$(beaker)" },
-      { "command": "mangaba.fixDiagnostics", "title": "Corrigir erros com IA", "category": "Mangaba AI", "icon": "$(lightbulb-autofix)" },
-      { "command": "mangaba.commitMessage", "title": "Gerar mensagem de commit", "category": "Mangaba AI", "icon": "$(sparkle)" },
-      { "command": "mangaba.pickContext", "title": "Adicionar contexto (@)", "category": "Mangaba AI", "icon": "$(mention)" },
-      { "command": "mangaba.openHistory", "title": "Conversas salvas", "category": "Mangaba AI", "icon": "$(history)" }
+      {
+        "command": "mangaba.openChat",
+        "title": "Abrir chat",
+        "category": "Mangaba AI"
+      },
+      {
+        "command": "mangaba.newChat",
+        "title": "Nova conversa",
+        "category": "Mangaba AI",
+        "icon": "$(add)"
+      },
+      {
+        "command": "mangaba.explainSelection",
+        "title": "Explicar seleção",
+        "category": "Mangaba AI",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "mangaba.editSelection",
+        "title": "Editar seleção (IA)",
+        "category": "Mangaba AI",
+        "icon": "$(wand)"
+      },
+      {
+        "command": "mangaba.agentTask",
+        "title": "Tarefa no projeto (agente)",
+        "category": "Mangaba AI",
+        "icon": "$(rocket)"
+      },
+      {
+        "command": "mangaba.generateTests",
+        "title": "Gerar testes",
+        "category": "Mangaba AI",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "mangaba.fixDiagnostics",
+        "title": "Corrigir erros com IA",
+        "category": "Mangaba AI",
+        "icon": "$(lightbulb-autofix)"
+      },
+      {
+        "command": "mangaba.commitMessage",
+        "title": "Gerar mensagem de commit",
+        "category": "Mangaba AI",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "mangaba.pickContext",
+        "title": "Adicionar contexto (@)",
+        "category": "Mangaba AI",
+        "icon": "$(mention)"
+      },
+      {
+        "command": "mangaba.openHistory",
+        "title": "Conversas salvas",
+        "category": "Mangaba AI",
+        "icon": "$(history)"
+      },
+      {
+        "command": "mangaba.indexProject",
+        "title": "Indexar projeto (RAG @codebase)",
+        "category": "Mangaba AI",
+        "icon": "$(database)"
+      }
     ],
     "keybindings": [
-      { "command": "mangaba.openChat", "key": "ctrl+alt+m", "mac": "cmd+alt+m" },
-      { "command": "mangaba.explainSelection", "key": "ctrl+alt+e", "mac": "cmd+alt+e", "when": "editorHasSelection" },
-      { "command": "mangaba.editSelection", "key": "ctrl+alt+k", "mac": "cmd+alt+k", "when": "editorHasSelection" }
+      {
+        "command": "mangaba.openChat",
+        "key": "ctrl+alt+m",
+        "mac": "cmd+alt+m"
+      },
+      {
+        "command": "mangaba.explainSelection",
+        "key": "ctrl+alt+e",
+        "mac": "cmd+alt+e",
+        "when": "editorHasSelection"
+      },
+      {
+        "command": "mangaba.editSelection",
+        "key": "ctrl+alt+k",
+        "mac": "cmd+alt+k",
+        "when": "editorHasSelection"
+      }
     ],
     "menus": {
       "view/title": [
-        { "command": "mangaba.newChat", "when": "view == mangaba.chatView", "group": "navigation" }
+        {
+          "command": "mangaba.newChat",
+          "when": "view == mangaba.chatView",
+          "group": "navigation"
+        }
       ],
       "editor/context": [
-        { "command": "mangaba.editSelection", "when": "editorHasSelection", "group": "1_mangaba@1" },
-        { "command": "mangaba.explainSelection", "when": "editorHasSelection", "group": "1_mangaba@2" },
-        { "command": "mangaba.generateTests", "group": "1_mangaba@3" }
+        {
+          "command": "mangaba.editSelection",
+          "when": "editorHasSelection",
+          "group": "1_mangaba@1"
+        },
+        {
+          "command": "mangaba.explainSelection",
+          "when": "editorHasSelection",
+          "group": "1_mangaba@2"
+        },
+        {
+          "command": "mangaba.generateTests",
+          "group": "1_mangaba@3"
+        }
       ],
       "scm/title": [
-        { "command": "mangaba.commitMessage", "when": "scmProvider == git", "group": "navigation" }
+        {
+          "command": "mangaba.commitMessage",
+          "when": "scmProvider == git",
+          "group": "navigation"
+        }
       ],
       "commandPalette": [
-        { "command": "mangaba.newChat", "when": "false" }
+        {
+          "command": "mangaba.newChat",
+          "when": "false"
+        }
       ]
     },
     "configuration": {
@@ -71,7 +192,12 @@
         "mangaba.model": {
           "type": "string",
           "default": "mangaba-pro",
-          "enum": ["mangaba-pro", "mangaba-max", "mangaba-lite-q4", "mangaba-vision-q8"],
+          "enum": [
+            "mangaba-pro",
+            "mangaba-max",
+            "mangaba-lite-q4",
+            "mangaba-vision-q8"
+          ],
           "enumDescriptions": [
             "8B — equilíbrio entre qualidade e velocidade",
             "9B — foco em raciocínio",
@@ -88,34 +214,50 @@
           "order": 3
         },
         "mangaba.temperature": {
-          "type": "number", "default": 0.7, "minimum": 0, "maximum": 2,
+          "type": "number",
+          "default": 0.7,
+          "minimum": 0,
+          "maximum": 2,
           "markdownDescription": "Temperatura de amostragem (0 = determinístico, 2 = criativo).",
           "order": 4
         },
         "mangaba.maxTokens": {
-          "type": "number", "default": 4096, "minimum": 1,
+          "type": "number",
+          "default": 4096,
+          "minimum": 1,
           "markdownDescription": "Máximo de tokens na resposta.",
           "order": 5
         },
         "mangaba.includeActiveFile": {
-          "type": "boolean", "default": true,
+          "type": "boolean",
+          "default": true,
           "markdownDescription": "Envia o **arquivo/seleção ativos** como contexto para o chat, para o modelo entender o código que você está escrevendo.",
           "order": 6
         },
         "mangaba.maxContextChars": {
-          "type": "number", "default": 6000, "minimum": 500,
+          "type": "number",
+          "default": 6000,
+          "minimum": 500,
           "markdownDescription": "Máximo de caracteres do arquivo enviados como contexto (evita estourar a janela do modelo).",
           "order": 7
         },
         "mangaba.reviewBeforeApply": {
-          "type": "boolean", "default": true,
+          "type": "boolean",
+          "default": true,
           "markdownDescription": "Mostra um **diff (atual × proposto)** e pede confirmação antes de aplicar o código no editor. Desligue para aplicar direto.",
           "order": 8
         },
         "mangaba.inlineCompletions": {
-          "type": "boolean", "default": false,
+          "type": "boolean",
+          "default": false,
           "markdownDescription": "**Autocompletar inline (ghost text)** enquanto você digita. *Opt-in:* os modelos Mangaba de 8K não são de baixa latência, então a sugestão pode demorar — melhor com um endpoint rápido. Aciona manualmente com `Alt+\\`.",
           "order": 9
+        },
+        "mangaba.useCodebaseContext": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Usa o **índice local do projeto** (RAG @codebase) para recuperar trechos relevantes e injetá-los no chat. Rode **Mangaba AI: Indexar projeto** primeiro. Embeddings 100% locais (transformers.js), nada sai da máquina.",
+          "order": 10
         }
       }
     },
@@ -129,26 +271,40 @@
             "id": "open",
             "title": "Abra o chat",
             "description": "Clique no ícone **Mangaba AI** na Activity Bar, ou rode o comando.\n\n[Abrir chat](command:mangaba.openChat)",
-            "media": { "image": "media/icon-128.png", "altText": "Mangaba AI" }
+            "media": {
+              "image": "media/icon-128.png",
+              "altText": "Mangaba AI"
+            }
           },
           {
             "id": "model",
             "title": "Escolha o modelo",
             "description": "No topo do painel, o seletor lista os modelos do seu servidor (`mangaba-pro`, `max`, `lite`, `vision`). Troque quando quiser — a escolha fica salva.",
-            "media": { "image": "media/icon-128.png", "altText": "Seletor de modelo" }
+            "media": {
+              "image": "media/icon-128.png",
+              "altText": "Seletor de modelo"
+            }
           },
           {
             "id": "explain",
             "title": "Explique código",
             "description": "Selecione um trecho no editor e use **Explicar seleção** (`Cmd/Ctrl+Alt+E`) ou o menu de contexto.",
-            "media": { "image": "media/icon-128.png", "altText": "Explicar seleção" },
-            "completionEvents": ["onCommand:mangaba.explainSelection"]
+            "media": {
+              "image": "media/icon-128.png",
+              "altText": "Explicar seleção"
+            },
+            "completionEvents": [
+              "onCommand:mangaba.explainSelection"
+            ]
           },
           {
             "id": "config",
             "title": "Aponte para o seu servidor",
             "description": "Ajuste `mangaba.baseUrl` para o seu endpoint OpenAI-compatível.\n\n[Abrir configurações](command:workbench.action.openSettings?%22mangaba%22)",
-            "media": { "image": "media/icon-128.png", "altText": "Configurações" }
+            "media": {
+              "image": "media/icon-128.png",
+              "altText": "Configurações"
+            }
           }
         ]
       }
@@ -158,12 +314,15 @@
     "build": "node esbuild.js",
     "watch": "node esbuild.js --watch",
     "vscode:prepublish": "node esbuild.js --production",
-    "package": "npx --yes @vscode/vsce package --no-dependencies"
+    "package": "npx --yes @vscode/vsce package"
   },
   "devDependencies": {
     "@types/node": "^20",
     "@types/vscode": "^1.85.0",
     "esbuild": "^0.24.0",
     "typescript": "^5"
+  },
+  "dependencies": {
+    "@xenova/transformers": "^2.17.2"
   }
 }

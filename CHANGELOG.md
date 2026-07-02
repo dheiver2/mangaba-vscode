@@ -2,6 +2,9 @@
 
 Todas as mudanças relevantes da extensão **Mangaba AI para VS Code**.
 
+## [0.9.0]
+- **RAG @codebase (embeddings locais)** — comando *Indexar projeto*: embeda o código com transformers.js (Xenova/all-MiniLM-L6-v2, 384d) 100% na máquina; o chat recupera os trechos mais similares e injeta como contexto. Config `mangaba.useCodebaseContext`.
+
 ## [0.8.0]
 - **Histórico de conversas** — salva/lista/retoma conversas (botão no topo do chat).
 - **Combo de dev** — Corrigir erros com IA (lâmpada 💡 + comando), Gerar testes, e Gerar mensagem de commit (botão no Source Control).
