@@ -1,0 +1,72 @@
+{
+  "name": "mangaba-ai",
+  "displayName": "Mangaba AI",
+  "description": "Chat com a IA brasileira e soberana Mangaba, dentro do VS Code — powered pelos modelos self-hosted (OpenAI-compatível).",
+  "version": "0.1.0",
+  "publisher": "mangaba",
+  "license": "MIT",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Machine Learning", "Programming Languages", "Other"],
+  "keywords": ["mangaba", "ai", "chat", "brasil", "llm", "copilot"],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        { "id": "mangaba", "title": "Mangaba AI", "icon": "media/icon.svg" }
+      ]
+    },
+    "views": {
+      "mangaba": [
+        { "type": "webview", "id": "mangaba.chatView", "name": "Chat" }
+      ]
+    },
+    "commands": [
+      { "command": "mangaba.openChat", "title": "Mangaba AI: Abrir chat" },
+      { "command": "mangaba.newChat", "title": "Nova conversa", "icon": "$(add)" },
+      { "command": "mangaba.explainSelection", "title": "Mangaba AI: Explicar seleção" }
+    ],
+    "menus": {
+      "view/title": [
+        { "command": "mangaba.newChat", "when": "view == mangaba.chatView", "group": "navigation" }
+      ],
+      "editor/context": [
+        { "command": "mangaba.explainSelection", "when": "editorHasSelection", "group": "1_mangaba" }
+      ]
+    },
+    "configuration": {
+      "title": "Mangaba AI",
+      "properties": {
+        "mangaba.baseUrl": {
+          "type": "string",
+          "default": "https://walton-undepreciatory-tracee.ngrok-free.dev/v1",
+          "description": "Endpoint OpenAI-compatível do servidor Mangaba (raiz terminando em /v1)."
+        },
+        "mangaba.model": {
+          "type": "string",
+          "default": "mangaba-pro",
+          "description": "Modelo padrão (ex.: mangaba-pro, mangaba-max, mangaba-lite-q4)."
+        },
+        "mangaba.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Bearer token (opcional — o Mangaba self-hosted é keyless)."
+        },
+        "mangaba.temperature": { "type": "number", "default": 0.7 },
+        "mangaba.maxTokens": { "type": "number", "default": 4096 }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "vscode:prepublish": "node esbuild.js --production",
+    "package": "npx --yes @vscode/vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5"
+  }
+}
