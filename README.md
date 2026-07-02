@@ -1,7 +1,6 @@
 <div align="center">
-  <img src="media/icon-128.png" alt="Mangaba AI" width="96" />
 
-  # Mangaba AI para VS Code
+  # 🥭 Mangaba AI para VS Code
 
   **A IA brasileira e soberana — dentro do seu editor.**
 
