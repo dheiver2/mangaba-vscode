@@ -2,7 +2,7 @@
   "name": "mangaba-ai",
   "displayName": "Mangaba AI",
   "description": "Chat com a IA brasileira e soberana Mangaba, dentro do VS Code — powered pelos modelos self-hosted (OpenAI-compatível).",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "publisher": "mangaba",
   "icon": "media/icon-128.png",
   "license": "MIT",
@@ -96,6 +96,16 @@
           "type": "number", "default": 6000, "minimum": 500,
           "markdownDescription": "Máximo de caracteres do arquivo enviados como contexto (evita estourar a janela do modelo).",
           "order": 7
+        },
+        "mangaba.reviewBeforeApply": {
+          "type": "boolean", "default": true,
+          "markdownDescription": "Mostra um **diff (atual × proposto)** e pede confirmação antes de aplicar o código no editor. Desligue para aplicar direto.",
+          "order": 8
+        },
+        "mangaba.inlineCompletions": {
+          "type": "boolean", "default": false,
+          "markdownDescription": "**Autocompletar inline (ghost text)** enquanto você digita. *Opt-in:* os modelos Mangaba de 8K não são de baixa latência, então a sugestão pode demorar — melhor com um endpoint rápido. Aciona manualmente com `Alt+\\`.",
+          "order": 9
         }
       }
     },

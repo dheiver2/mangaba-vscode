@@ -13,7 +13,17 @@ function cfg() {
     maxTokens:        c.get<number>('maxTokens') ?? 4096,
     includeActiveFile: c.get<boolean>('includeActiveFile') ?? true,
     maxContextChars:  c.get<number>('maxContextChars') ?? 6000,
+    reviewBeforeApply: c.get<boolean>('reviewBeforeApply') ?? true,
+    inlineCompletions: c.get<boolean>('inlineCompletions') ?? false,
   }
+}
+
+// Documento virtual usado no diff de revisão ("proposto").
+const DIFF_SCHEME = 'mangaba-diff'
+const diffContents = new Map<string, string>()
+
+function currentModel(ctx: vscode.ExtensionContext): string {
+  return ctx.globalState.get<string>('mangaba.model') || cfg().model
 }
 
 function authHeaders(c: ReturnType<typeof cfg>) {
@@ -55,7 +65,7 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
   }
 
   private model(): string {
-    return this.ctx.globalState.get<string>('mangaba.model') || cfg().model
+    return currentModel(this.ctx)
   }
 
   /** Contexto do editor ativo: nota para o modelo + chip para a UI. */
@@ -93,25 +103,42 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
     return copy
   }
 
-  /** Aplica um bloco de código no editor ativo. */
+  /** Aplica um bloco de código no editor ativo (com diff de revisão opcional). */
   private async applyCode(code: string, mode?: string) {
     const ed = this.activeEditor()
     if (!ed) { vscode.window.showWarningMessage('Mangaba: abra um arquivo no editor para aplicar o código.'); return }
     const shown = await vscode.window.showTextDocument(ed.document, { viewColumn: ed.viewColumn, preserveFocus: false })
-    const sel = shown.selection
     const doc = shown.document
-    await shown.edit((b) => {
-      if (mode === 'insert') {
-        b.insert(sel.active, code)
-      } else if (mode === 'replaceFile') {
-        const full = new vscode.Range(doc.positionAt(0), doc.positionAt(doc.getText().length))
-        b.replace(full, code)
-      } else {
-        if (sel.isEmpty) b.insert(sel.active, code)
-        else b.replace(sel, code)
-      }
-    })
-    vscode.window.showInformationMessage('Mangaba: código aplicado (Ctrl/Cmd+Z para desfazer).')
+    const sel = shown.selection
+
+    // Alvo da edição (range) + novo texto, por modo.
+    let range: vscode.Range
+    if (mode === 'insert') range = new vscode.Range(sel.active, sel.active)
+    else if (mode === 'replaceFile') range = new vscode.Range(doc.positionAt(0), doc.positionAt(doc.getText().length))
+    else range = sel.isEmpty ? new vscode.Range(sel.active, sel.active) : sel
+
+    const doApply = async () => {
+      const we = new vscode.WorkspaceEdit()
+      we.replace(doc.uri, range, code)
+      await vscode.workspace.applyEdit(we)
+      vscode.window.showInformationMessage('Mangaba: código aplicado (Ctrl/Cmd+Z para desfazer).')
+    }
+
+    if (!cfg().reviewBeforeApply) { await doApply(); return }
+
+    // Diff de revisão: mostra atual × proposto e pede confirmação.
+    const full = doc.getText()
+    const modified = full.slice(0, doc.offsetAt(range.start)) + code + full.slice(doc.offsetAt(range.end))
+    const base = doc.uri.path.split('/').pop() || 'arquivo'
+    const proposedUri = vscode.Uri.parse(`${DIFF_SCHEME}:${base} (proposto)`).with({ query: String(Date.now()) })
+    diffContents.set(proposedUri.toString(), modified)
+    await vscode.commands.executeCommand('vscode.diff', doc.uri, proposedUri, `Mangaba — revisar: ${base}  (◀ atual | proposto ▶)`)
+    const pick = await vscode.window.showInformationMessage('Aplicar a mudança da Mangaba?', 'Aplicar', 'Cancelar')
+    diffContents.delete(proposedUri.toString())
+    if (pick === 'Aplicar') {
+      await doApply()
+      await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+    }
   }
 
   /** Reescreve um trecho conforme a instrução (não-streaming). Usado por "Editar seleção". */
@@ -263,6 +290,60 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
   }
 }
 
+/** Autocompletar inline (ghost text). Opt-in — ver mangaba.inlineCompletions. */
+class MangabaInline implements vscode.InlineCompletionItemProvider {
+  constructor(private readonly ctx: vscode.ExtensionContext) {}
+
+  async provideInlineCompletionItems(
+    document: vscode.TextDocument,
+    position: vscode.Position,
+    _context: vscode.InlineCompletionContext,
+    token: vscode.CancellationToken,
+  ): Promise<vscode.InlineCompletionItem[] | undefined> {
+    const c = cfg()
+    if (!c.inlineCompletions || !c.baseUrl) return
+    if (document.uri.scheme === DIFF_SCHEME) return
+
+    // Debounce — evita disparar a cada tecla (modelo é lento).
+    await new Promise((r) => setTimeout(r, 350))
+    if (token.isCancellationRequested) return
+
+    const startLine = Math.max(0, position.line - 80)
+    const endLine = Math.min(document.lineCount - 1, position.line + 25)
+    const prefix = document.getText(new vscode.Range(new vscode.Position(startLine, 0), position))
+    const suffix = document.getText(new vscode.Range(position, new vscode.Position(endLine, document.lineAt(endLine).text.length)))
+    if (!prefix.trim()) return
+
+    const lang = document.languageId
+    const sys = `Você completa código ${lang}. Responda APENAS com a continuação a partir do ponto do cursor — sem repetir o que já existe, sem explicações e sem cercas markdown.`
+    const user = `Complete o código no ponto <CURSOR>.\n--- antes ---\n${prefix}<CURSOR>\n--- depois ---\n${suffix}`
+
+    const controller = new AbortController()
+    const sub = token.onCancellationRequested(() => controller.abort())
+    try {
+      const res = await fetch(`${c.baseUrl}/chat/completions`, {
+        method: 'POST', headers: authHeaders(c),
+        body: JSON.stringify({
+          model: currentModel(this.ctx),
+          messages: [{ role: 'system', content: sys }, { role: 'user', content: user }],
+          temperature: 0.1, max_tokens: 128, stream: false,
+        }),
+        signal: controller.signal,
+      })
+      if (!res.ok) return
+      const d = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> }
+      let text = d.choices?.[0]?.message?.content ?? ''
+      text = text.replace(/^\s*```[a-zA-Z0-9_-]*\n?/, '').replace(/\n?```\s*$/, '')
+      if (!text.trim() || token.isCancellationRequested) return
+      return [new vscode.InlineCompletionItem(text, new vscode.Range(position, position))]
+    } catch {
+      return
+    } finally {
+      sub.dispose()
+    }
+  }
+}
+
 function getNonce() {
   let t = ''
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
@@ -277,6 +358,10 @@ export function activate(ctx: vscode.ExtensionContext) {
     vscode.window.registerWebviewViewProvider(MangabaViewProvider.viewType, provider, {
       webviewOptions: { retainContextWhenHidden: true },
     }),
+    vscode.workspace.registerTextDocumentContentProvider(DIFF_SCHEME, {
+      provideTextDocumentContent: (uri) => diffContents.get(uri.toString()) ?? '',
+    }),
+    vscode.languages.registerInlineCompletionItemProvider({ pattern: '**' }, new MangabaInline(ctx)),
     vscode.window.onDidChangeActiveTextEditor((ed) => { if (ed) provider.setLastEditor(ed); provider.updateContext() }),
     vscode.window.onDidChangeTextEditorSelection(() => provider.updateContext()),
     vscode.commands.registerCommand('mangaba.openChat', () =>
