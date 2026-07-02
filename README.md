@@ -1,79 +1,72 @@
-<div align="center">
+# Mangaba AI para VS Code
 
-  # 🥭 Mangaba AI para VS Code
+[![Version](https://img.shields.io/badge/version-0.3.2-E94A12)](https://github.com/dheiver2/mangaba-vscode)
+[![VS Code](https://img.shields.io/badge/VS%20Code-1.85%2B-007ACC?logo=visualstudiocode&logoColor=white)](https://code.visualstudio.com/)
+[![License](https://img.shields.io/badge/license-MIT-3DA639)](LICENSE)
+[![Feito no Brasil](https://img.shields.io/badge/Feito%20no-Brasil-009B3A)](https://mangaba.chat)
 
-  **A IA brasileira e soberana — dentro do seu editor.**
+**A IA brasileira e soberana — dentro do seu editor.** Chat com os modelos self-hosted da Mangaba (OpenAI-compatível), com seletor de modelo ao vivo, streaming, visão e explicação de código. Sem provedor estrangeiro, sem lock-in.
 
-  Chat com os modelos **self-hosted** da Mangaba (OpenAI-compatível), com seletor de modelo, streaming e explicação de código. Sem provedor estrangeiro, sem lock-in.
-</div>
+## Recursos
 
----
+- **Chat com streaming** — painel dedicado na Activity Bar, respostas em tempo real com markdown e blocos de código.
+- **Seletor de modelo ao vivo** — lista os modelos direto do seu servidor (`/v1/models`): `mangaba-pro`, `mangaba-max`, `mangaba-lite-q4`, `mangaba-vision-q8`. Troca a qualquer momento; a escolha persiste.
+- **Visão (multimodal)** — anexe ou cole uma imagem e pergunte sobre ela (com o modelo `mangaba-vision-q8`).
+- **Explicar seleção** — selecione um trecho no editor e explique em português (menu de contexto ou atalho).
+- **Soberano por padrão** — as chamadas saem do host da extensão (Node), não do webview: sem CORS e sem expor URL/credencial no cliente.
+- **Nativo do tema** — usa as cores do seu tema do VS Code (claro/escuro), com acento laranja da marca.
 
-## ✨ Recursos
+## Uso
 
-- **💬 Chat com streaming** — painel dedicado na Activity Bar (ícone 🥭), respostas em tempo real com markdown e blocos de código.
-- **🧠 Seletor de modelo ao vivo** — lista os modelos direto do seu servidor (`/v1/models`): `mangaba-pro`, `mangaba-max`, `mangaba-lite-q4`, `mangaba-vision-q8`. Troque a qualquer momento; a escolha persiste.
-- **🔍 Explicar seleção** — selecione um trecho → botão direito → *"Mangaba AI: Explicar seleção"* (ou o atalho). A extensão manda o código + a linguagem e explica em português.
-- **🔒 Soberano por padrão** — as chamadas saem do **host da extensão** (Node), não do webview: sem CORS e sem expor a URL/credencial no cliente.
-- **🎨 Nativo do tema** — a UI usa as cores do seu tema do VS Code (claro/escuro), com acento laranja da marca.
-- **♿ Acessível** — respeita `prefers-reduced-motion`, foco por teclado e Enter/Shift+Enter no compositor.
-
-## 🚀 Uso
-
-1. Clique no ícone **🥭 Mangaba AI** na Activity Bar (ou `Cmd/Ctrl+Alt+M`).
+1. Clique no ícone **Mangaba AI** na Activity Bar (ou `Ctrl/Cmd+Alt+M`).
 2. Escolha o **modelo** no seletor do topo.
 3. Digite e envie (**Enter** envia, **Shift+Enter** quebra linha).
-4. Para explicar código: selecione no editor → **botão direito → Mangaba AI: Explicar seleção**.
-5. **+** no topo do painel = nova conversa.
+4. **Imagem:** clique no ícone de imagem (ou cole) e selecione `mangaba-vision-q8`.
+5. **Código:** selecione no editor e use **Explicar seleção** (menu de contexto).
 
-## ⚙️ Configuração
+## Configuração
 
 | Configuração | Padrão | Descrição |
-|---|---|---|
-| `mangaba.baseUrl` | `…/v1` | Endpoint OpenAI-compatível do servidor Mangaba. |
+| --- | --- | --- |
+| `mangaba.baseUrl` | `.../v1` | Endpoint OpenAI-compatível do servidor Mangaba. |
 | `mangaba.model` | `mangaba-pro` | Modelo inicial (o seletor do chat sobrepõe). |
 | `mangaba.apiKey` | — | Bearer token (opcional — o self-hosted é keyless). |
-| `mangaba.temperature` | `0.7` | Temperatura de amostragem. |
+| `mangaba.temperature` | `0.7` | Temperatura de amostragem (0–2). |
 | `mangaba.maxTokens` | `4096` | Máximo de tokens na resposta. |
 
-Ajuste em **Settings → Extensions → Mangaba AI**.
-
-## ⌨️ Comandos & atalhos
+## Comandos e atalhos
 
 | Comando | Atalho |
-|---|---|
-| Mangaba AI: Abrir chat | `Cmd/Ctrl+Alt+M` |
-| Mangaba AI: Explicar seleção | `Cmd/Ctrl+Alt+E` (com seleção) |
-| Nova conversa | botão `+` no painel |
+| --- | --- |
+| Mangaba AI: Abrir chat | `Ctrl/Cmd+Alt+M` |
+| Mangaba AI: Explicar seleção | `Ctrl/Cmd+Alt+E` (com seleção) |
+| Nova conversa | botão no topo do painel |
 
-## 🏗️ Arquitetura
+## Arquitetura
 
 ```
-VS Code ──webview (media/main.js)──► extension host (src/extension.ts)
-                                          │  fetch + SSE (stream)
-                                          ▼
-                          Servidor Mangaba  /v1/chat/completions · /v1/models
+VS Code  ──webview (media/main.js)──►  extension host (src/extension.ts)
+                                            │  fetch + SSE (stream)
+                                            ▼
+                        Servidor Mangaba   /v1/chat/completions · /v1/models
 ```
 
-- Streaming SSE parseado no host e repassado ao webview por `postMessage`.
+- Streaming SSE parseado no host e repassado ao webview via `postMessage`.
 - Seletor populado por `GET {baseUrl}/models`; escolha persistida em `globalState`.
-- Build via **esbuild** → `dist/extension.js`.
+- Build via esbuild em `dist/extension.js`.
 
-## 🛠️ Desenvolvimento
+## Desenvolvimento
 
 ```bash
 npm install
-npm run build          # ou: npm run watch
-# F5 no VS Code → Extension Development Host
-npm run package        # gera o .vsix (@vscode/vsce)
+npm run build        # ou: npm run watch  (F5 abre o Extension Development Host)
+npm run package      # gera o .vsix
 ```
 
-## 🔐 Privacidade
+## Privacidade
 
-Nada é enviado a terceiros: apenas ao **seu** endpoint Mangaba (`mangaba.baseUrl`). Sem telemetria.
+Nada é enviado a terceiros — apenas ao seu endpoint Mangaba (`mangaba.baseUrl`). Sem telemetria.
 
 ---
 
-<div align="center">
-  <sub>Feito no Brasil 🇧🇷 · <a href="https://mangaba.chat">mangaba.chat</a></sub>
-</div>
+Feito no Brasil · [mangaba.chat](https://mangaba.chat)

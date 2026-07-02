@@ -2,7 +2,7 @@
   "name": "mangaba-ai",
   "displayName": "Mangaba AI",
   "description": "Chat com a IA brasileira e soberana Mangaba, dentro do VS Code — powered pelos modelos self-hosted (OpenAI-compatível).",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "publisher": "mangaba",
   "icon": "media/icon-128.png",
   "license": "MIT",
@@ -95,7 +95,7 @@
           {
             "id": "open",
             "title": "Abra o chat",
-            "description": "Clique no ícone 🥭 **Mangaba AI** na Activity Bar, ou rode o comando.\n\n[Abrir chat](command:mangaba.openChat)",
+            "description": "Clique no ícone **Mangaba AI** na Activity Bar, ou rode o comando.\n\n[Abrir chat](command:mangaba.openChat)",
             "media": { "image": "media/icon-128.png", "altText": "Mangaba AI" }
           },
           {
