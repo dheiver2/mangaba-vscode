@@ -34,7 +34,8 @@ jobs:
         if: ${{ env.VSCE_PAT != '' }}
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: npx --yes @vscode/vsce publish --target ${{ matrix.target }} -p "$VSCE_PAT"
+        # vsce lê VSCE_PAT do ambiente (cross-platform: bash e PowerShell).
+        run: npx --yes @vscode/vsce publish --target ${{ matrix.target }}
 
   # 2) Build UNIVERSAL leve — fallback para plataformas não listadas acima.
   #    RAG via Ollama (mangaba.embeddingsBackend = ollama).
@@ -50,4 +51,5 @@ jobs:
         if: ${{ env.VSCE_PAT != '' }}
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: npx --yes @vscode/vsce publish --no-dependencies -p "$VSCE_PAT"
+        # vsce lê VSCE_PAT do ambiente (cross-platform: bash e PowerShell).
+        run: npx --yes @vscode/vsce publish --no-dependencies
