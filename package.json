@@ -1,7 +1,7 @@
 {
   "name": "mangaba-ai",
   "displayName": "Mangaba AI",
-  "description": "Chat com a IA brasileira e soberana Mangaba, dentro do VS Code — powered pelos modelos self-hosted (OpenAI-compatível).",
+  "description": "O copiloto de IA brasileiro e soberano: chat, agente autônomo, edição de código, anexos (PDF/imagem) e RAG — funciona de fábrica ou 100% na sua infra (OpenAI-compatível).",
   "version": "0.11.8",
   "publisher": "mangaba-ai",
   "icon": "media/icon-128.png",
@@ -368,8 +368,8 @@
         "steps": [
           {
             "id": "open",
-            "title": "Abra o chat",
-            "description": "Clique no ícone **Mangaba AI** na Activity Bar, ou rode o comando.\n\n[Abrir chat](command:mangaba.openChat)",
+            "title": "Abra o chat — já funciona",
+            "description": "Clique no ícone **Mangaba AI** na Activity Bar (ou `Ctrl/Cmd+Alt+M`) e converse. A extensão **já vem conectada** ao servidor Mangaba — nenhuma configuração é necessária.\n\n[Abrir chat](command:mangaba.openChat)",
             "media": {
               "image": "media/icon-128.png",
               "altText": "Mangaba AI"
@@ -378,16 +378,34 @@
           {
             "id": "model",
             "title": "Escolha o modelo",
-            "description": "No topo do painel, o seletor lista os modelos do seu servidor (`mangaba-pro`, `max`, `lite`, `vision`). Troque quando quiser — a escolha fica salva.",
+            "description": "No topo do painel, o seletor lista os modelos do servidor (`mangaba-pro`, `max`, `lite`, `vision`). O ícone **Mangaba na barra de status** mostra se o servidor está online.",
             "media": {
               "image": "media/icon-128.png",
               "altText": "Seletor de modelo"
             }
           },
           {
+            "id": "attach",
+            "title": "Anexe arquivos e imagens",
+            "description": "**Arraste e solte** arquivos no chat, **cole** (`Ctrl/Cmd+V`) ou use o **clipe** — código, texto, **PDF** (texto extraído automaticamente) e **imagens** (visão). Clique no chip para pré-visualizar.",
+            "media": {
+              "image": "media/icon-128.png",
+              "altText": "Anexar arquivos"
+            }
+          },
+          {
+            "id": "slash",
+            "title": "Comandos rápidos com /",
+            "description": "Digite **`/`** no campo de mensagem: `/explain`, `/tests`, `/doc`, `/refactor`, `/fix`, `/export`, `/clear`. Também dá para **regenerar**, **editar** (`↑`) e **copiar** qualquer mensagem.",
+            "media": {
+              "image": "media/icon-128.png",
+              "altText": "Comandos de barra"
+            }
+          },
+          {
             "id": "explain",
-            "title": "Explique código",
-            "description": "Selecione um trecho no editor e use **Explicar seleção** (`Cmd/Ctrl+Alt+E`) ou o menu de contexto.",
+            "title": "Explique e edite código",
+            "description": "Selecione um trecho no editor e use **Explicar seleção** (`Cmd/Ctrl+Alt+E`) ou **Editar seleção (IA)** (`Cmd/Ctrl+Alt+K`). Blocos de código têm **Aplicar / Inserir / Copiar** com diff de revisão.",
             "media": {
               "image": "media/icon-128.png",
               "altText": "Explicar seleção"
@@ -397,9 +415,18 @@
             ]
           },
           {
+            "id": "agent",
+            "title": "Agente autônomo e RAG",
+            "description": "Rode **Agente autônomo (tarefa)** para planejar/editar/verificar em laço (com aprovação e rollback), e **Indexar projeto** para o chat recuperar trechos do seu código automaticamente.",
+            "media": {
+              "image": "media/icon-128.png",
+              "altText": "Agente autônomo"
+            }
+          },
+          {
             "id": "config",
-            "title": "Aponte para o seu servidor",
-            "description": "Ajuste `mangaba.baseUrl` para o seu endpoint OpenAI-compatível.\n\n[Abrir configurações](command:workbench.action.openSettings?%22mangaba%22)",
+            "title": "(Opcional) Use o seu servidor",
+            "description": "Para soberania total, aponte `mangaba.baseUrl` para o seu endpoint OpenAI-compatível — seu código nunca sai da sua infraestrutura.\n\n[Abrir configurações](command:workbench.action.openSettings?%22mangaba%22)",
             "media": {
               "image": "media/icon-128.png",
               "altText": "Configurações"

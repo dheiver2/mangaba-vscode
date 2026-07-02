@@ -2,6 +2,33 @@
 
 Todas as mudanças relevantes da extensão **Mangaba AI para VS Code**.
 
+## [0.11.8]
+- **10 melhorias de UX no chat**:
+  - **Status do servidor na barra inferior** — online/offline + modelo atual; clique abre o chat.
+  - Botão **Nova conversa** e **Exportar conversa (Markdown)** no topo do painel.
+  - **Copiar** em cada mensagem; **Regenerar** a última resposta; **Editar/reenviar** sua última mensagem (botão ou `↑` com o campo vazio).
+  - **Comandos de barra `/`** — `/explain`, `/tests`, `/doc`, `/refactor`, `/fix`, `/export`, `/clear` (navegue com `↑↓` + `Enter`).
+  - **Pré-visualizar anexo** — clique no chip abre o conteúdo num editor.
+  - **Contador de tokens** estimados no rodapé, com aviso ao aproximar do limite.
+  - **Erros amigáveis** (detecta servidor offline) e **`Esc` interrompe** o streaming.
+
+## [0.11.7]
+- **Anexar e analisar arquivos (estilo big-tech)** — arraste & solte, cole (`Ctrl/Cmd+V`) ou use o clipe (vários de uma vez), com chips por tipo:
+  - Código/texto/JSON/CSV/logs → conteúdo injetado no prompt (nome + linguagem; truncagem com aviso).
+  - **PDF → texto extraído automaticamente** (pdfjs resolve fontes/encodings; parser próprio como reserva).
+  - Imagem → modelo de **visão**; binário → metadados.
+
+## [0.11.6]
+- CI: correção do publish automático no Windows (`VSCE_PAT` via ambiente, cross-platform).
+
+## [0.11.5]
+- **Funciona sem configurar nada** — o servidor Mangaba público é usado por padrão (fallback no código, mesmo com configurações antigas/vazias).
+- **Suíte de testes** (node:test + tsx) e **CI** com typecheck + testes + build em todo push.
+
+## [0.11.4]
+- **Publicação na Marketplace** (publisher `mangaba-ai`) com builds por plataforma (self-contained) + build universal leve.
+- Servidor Mangaba como `baseUrl` padrão para todos os usuários.
+
 ## [0.11.0]
 - **Planejamento** — o agente esboça um plano numerado antes de agir.
 - **Checkpoints/rollback** — *Desfazer sessão do agente* restaura todos os arquivos que ele alterou.

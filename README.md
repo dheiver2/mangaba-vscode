@@ -1,6 +1,7 @@
 # Mangaba AI para VS Code
 
-[![Version](https://img.shields.io/badge/version-0.11.2-E94A12)](https://github.com/dheiver2/mangaba-vscode)
+[![Version](https://img.shields.io/visual-studio-marketplace/v/mangaba-ai.mangaba-ai?label=marketplace&color=E94A12)](https://marketplace.visualstudio.com/items?itemName=mangaba-ai.mangaba-ai)
+[![Installs](https://img.shields.io/visual-studio-marketplace/i/mangaba-ai.mangaba-ai?color=3DA639)](https://marketplace.visualstudio.com/items?itemName=mangaba-ai.mangaba-ai)
 [![VS Code](https://img.shields.io/badge/VS%20Code-1.85%2B-007ACC?logo=visualstudiocode&logoColor=white)](https://code.visualstudio.com/)
 [![Soberano](https://img.shields.io/badge/dados-100%25%20na%20sua%20infra-3DA639)](https://mangaba.chat)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
@@ -38,11 +39,15 @@ Copilot, Cursor e Cody são excelentes — mas mandam seu código para servidore
 
 ## Início rápido
 
+**Funciona de fábrica** — a extensão já vem conectada ao servidor Mangaba, sem configurar nada.
+
 1. Instale a extensão e abra o ícone **Mangaba AI** na Activity Bar (ou `Ctrl/Cmd+Alt+M`).
-2. Em **Configurações → Extensions → Mangaba AI**, defina **`mangaba.baseUrl`** com o seu servidor (endpoint OpenAI-compatível terminando em `/v1`).
-3. Escolha o **modelo** no seletor do topo do painel.
-4. Converse. Para trazer o código junto, deixe o arquivo aberto (contexto automático) ou use o botão **`@`**.
-5. Selecione um trecho e use o menu de contexto: **Explicar**, **Editar (IA)** ou **Gerar testes**.
+2. Escolha o **modelo** no seletor do topo do painel e converse — digite **`/`** para ver os comandos rápidos.
+3. Para trazer o código junto, deixe o arquivo aberto (contexto automático), use o botão **`@`** ou **arraste arquivos** para o chat.
+4. Selecione um trecho e use o menu de contexto: **Explicar**, **Editar (IA)** ou **Gerar testes**.
+5. *(Opcional, empresas)* aponte `mangaba.baseUrl` para o **seu** servidor OpenAI-compatível — soberania total.
+
+O ícone **Mangaba na barra de status** (canto inferior) mostra se o servidor está online e qual modelo está ativo.
 
 ---
 
@@ -126,7 +131,7 @@ Conecte servidores **Model Context Protocol** e o agente usa as ferramentas dele
 
 | Configuração | Padrão | Descrição |
 | --- | --- | --- |
-| `mangaba.baseUrl` | — | Endpoint OpenAI-compatível do **seu** servidor Mangaba. |
+| `mangaba.baseUrl` | servidor Mangaba | Endpoint OpenAI-compatível. Já vem apontando para o servidor Mangaba; troque pelo **seu** para soberania total. |
 | `mangaba.model` | `mangaba-pro` | Modelo inicial (o seletor do chat sobrepõe). |
 | `mangaba.apiKey` | — | Bearer token (opcional). |
 | `mangaba.temperature` / `mangaba.maxTokens` | `0.7` / `4096` | Amostragem e limite de resposta. |
@@ -141,23 +146,26 @@ Conecte servidores **Model Context Protocol** e o agente usa as ferramentas dele
 
 ## Privacidade e soberania
 
-Nada é enviado a terceiros — **apenas ao endpoint que você configurar**. Embeddings do RAG rodam localmente. Sem telemetria. O código que você escreve permanece na sua infraestrutura.
+O tráfego vai **apenas para o endpoint configurado** (o servidor Mangaba por padrão, ou o seu). Embeddings do RAG e extração de PDF rodam **localmente**. Sem telemetria. Para soberania total (governo, bancos, saúde), aponte `mangaba.baseUrl` para a **sua** infraestrutura — nada sai dela.
 
 ## Requisitos
 
-- VS Code **1.85+**.
-- Um servidor Mangaba (ou qualquer endpoint **OpenAI-compatível**) em `mangaba.baseUrl`.
-- Opcional: **Ollama** para o RAG na build leve; **Git** para a mensagem de commit.
+- VS Code **1.85+**. Só isso — a extensão já vem conectada ao servidor Mangaba.
+- Opcional: seu próprio servidor **OpenAI-compatível** em `mangaba.baseUrl`; **Ollama** para o RAG na build leve; **Git** para a mensagem de commit.
 
 ## FAQ
 
-**Preciso de internet?** Só entre a extensão e o **seu** servidor. Nada vai para nuvens de terceiros.
+**Preciso configurar algo para começar?** Não — instale e converse. O seletor de modelos e o status do servidor (barra inferior) já funcionam de fábrica.
+
+**Preciso de internet?** Só entre a extensão e o servidor configurado. Nada vai para nuvens de terceiros.
 
 **Funciona com qualquer modelo?** Sim — qualquer endpoint OpenAI-compatível (Mangaba, vLLM, Ollama, LM Studio, etc.).
 
+**Posso mandar arquivos?** Sim — arraste, cole ou anexe: código, texto, JSON/CSV, logs, **PDF** (texto extraído automaticamente) e **imagens** (visão). Clique no chip para pré-visualizar o que será enviado.
+
 **É seguro rodar o agente?** Sim: todo comando pede **aprovação**, comandos perigosos são bloqueados e cada edição tem **diff + rollback**.
 
-**Por que o modelo às vezes trava em tarefas grandes?** Os modelos menores têm janela de contexto limitada; use seleção/`@`-contexto e um modelo de contexto maior no servidor para tarefas amplas.
+**Por que o modelo às vezes trava em tarefas grandes?** Os modelos menores têm janela de contexto limitada; acompanhe o **contador de tokens** no rodapé e use seleção/`@`-contexto para focar o envio.
 
 ## Publicar novas versões
 
