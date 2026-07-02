@@ -1,6 +1,7 @@
 import * as vscode from 'vscode'
 import { CodeIndex } from './rag'
 import { AgentRunner } from './agent'
+import { McpManager } from './mcp'
 
 type ContentPart = { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }
 interface Msg { role: 'system' | 'user' | 'assistant'; content: string | ContentPart[] }
@@ -82,6 +83,7 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
   private lastEditor?: vscode.TextEditor
   private pendingRefs: string[] = []      // notas de contexto (@) para o próximo envio
   private pendingChips: string[] = []
+  private ckKey = 'mangaba.agentCheckpoint'
   readonly index: CodeIndex
 
   constructor(private readonly ctx: vscode.ExtensionContext) {
@@ -260,6 +262,32 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
     return true
   }
 
+  // ── Checkpoints do agente (para desfazer a sessão inteira) ───────────────
+  beginCheckpoint() { this.ctx.workspaceState.update(this.ckKey, []) }
+  private recordCheckpoint(relPath: string, before: string | null) {
+    const ck = this.ctx.workspaceState.get<Array<{ path: string; before: string | null }>>(this.ckKey, [])
+    if (!ck.some((e) => e.path === relPath)) { ck.push({ path: relPath, before }); this.ctx.workspaceState.update(this.ckKey, ck) }
+  }
+  async undoAgentSession(): Promise<number> {
+    const root = vscode.workspace.workspaceFolders?.[0]
+    const ck = this.ctx.workspaceState.get<Array<{ path: string; before: string | null }>>(this.ckKey, [])
+    if (!root || !ck.length) { vscode.window.showInformationMessage('Mangaba: nada para desfazer.'); return 0 }
+    const we = new vscode.WorkspaceEdit()
+    for (const e of ck) {
+      const uri = vscode.Uri.joinPath(root.uri, e.path)
+      if (e.before === null) we.deleteFile(uri, { ignoreIfNotExists: true })
+      else {
+        try {
+          const doc = await vscode.workspace.openTextDocument(uri)
+          we.replace(uri, new vscode.Range(doc.positionAt(0), doc.positionAt(doc.getText().length)), e.before)
+        } catch { we.createFile(uri, { overwrite: true, contents: Buffer.from(e.before, 'utf8') }) }
+      }
+    }
+    await vscode.workspace.applyEdit(we)
+    this.ctx.workspaceState.update(this.ckKey, [])
+    return ck.length
+  }
+
   /** Cria/sobrescreve um arquivo (usado pelo agente), com diff de revisão. */
   async agentApplyFile(relPath: string, content: string): Promise<boolean> {
     const root = vscode.workspace.workspaceFolders?.[0]
@@ -280,6 +308,7 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
       if (pick !== 'Aplicar') return false
       await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
     }
+    this.recordCheckpoint(relPath, isNew ? null : existing)
     const we = new vscode.WorkspaceEdit()
     if (isNew) {
       we.createFile(uri, { overwrite: true, contents: Buffer.from(content, 'utf8') })
@@ -584,6 +613,8 @@ function getNonce() {
 
 export function activate(ctx: vscode.ExtensionContext) {
   const provider = new MangabaViewProvider(ctx)
+  const mcp = new McpManager()
+  ctx.subscriptions.push({ dispose: () => mcp.dispose() })
 
   ctx.subscriptions.push(
     vscode.window.registerWebviewViewProvider(MangabaViewProvider.viewType, provider, {
@@ -689,6 +720,8 @@ export function activate(ctx: vscode.ExtensionContext) {
       })
       if (!task) return
       const c = vscode.workspace.getConfiguration('mangaba')
+      provider.beginCheckpoint()
+      await mcp.init()
       const runner = new AgentRunner(
         (messages) => chatOnce(ctx, messages, 0.2),
         (p, content) => provider.agentApplyFile(p, content),
@@ -696,8 +729,14 @@ export function activate(ctx: vscode.ExtensionContext) {
         c.get<string>('testCommand') || '',
         c.get<string>('commandApproval') || 'always',
         c.get<number>('agentMaxSteps') || 12,
+        mcp.tools(),
+        (server, name, args) => mcp.call(server, name, args),
       )
       await runner.run(task)
+    }),
+    vscode.commands.registerCommand('mangaba.undoAgent', async () => {
+      const n = await provider.undoAgentSession()
+      if (n) vscode.window.showInformationMessage(`Mangaba: desfeita a sessão do agente (${n} arquivo(s) restaurado(s)).`)
     }),
     vscode.commands.registerCommand('mangaba.indexProject', async () => {
       if (!vscode.workspace.workspaceFolders?.length) { vscode.window.showWarningMessage('Abra uma pasta/projeto para indexar.'); return }

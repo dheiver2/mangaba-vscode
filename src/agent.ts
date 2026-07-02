@@ -1,10 +1,12 @@
 import * as vscode from 'vscode'
 import { exec } from 'child_process'
+import type { McpTool } from './mcp'
 
 export type ChatFn = (messages: Array<{ role: string; content: string }>) => Promise<string | null>
 export type ApplyFileFn = (relPath: string, content: string) => Promise<boolean>
+export type McpCallFn = (server: string, name: string, args: unknown) => Promise<string>
 
-interface Action { tool: string; path?: string; content?: string; command?: string; summary?: string }
+interface Action { tool: string; path?: string; content?: string; command?: string; summary?: string; server?: string; name?: string; args?: unknown }
 
 const DANGEROUS = /\b(rm\s+-rf|mkfs|dd\s+if=|:\(\)\s*\{|shutdown|reboot|>\s*\/dev\/sd|chmod\s+-R\s+777\s+\/|git\s+push\s+--force)/i
 
@@ -42,6 +44,8 @@ export class AgentRunner {
     private testCommand: string,
     private commandApproval: string,   // 'always' | 'never'
     private maxSteps: number,
+    private mcpTools: McpTool[] = [],
+    private mcpCall?: McpCallFn,
   ) {
     this.out = vscode.window.createOutputChannel('Mangaba Agente')
   }
@@ -49,10 +53,22 @@ export class AgentRunner {
   async run(task: string) {
     this.out.show(true)
     this.out.appendLine(`▶ Tarefa: ${task}\n`)
-    const hint = this.testCommand ? `\nComando de teste sugerido: \`${this.testCommand}\`.` : ''
-    const messages: Array<{ role: string; content: string }> = [
-      { role: 'system', content: SYSTEM + hint },
+
+    // 1) Planejamento — o agente esboça um plano antes de agir.
+    const plan = await this.chat([
+      { role: 'system', content: 'Você é um agente de código. Devolva um PLANO curto e numerado (3-6 passos) para a tarefa. Só a lista, sem código.' },
       { role: 'user', content: `Tarefa: ${task}` },
+    ])
+    if (plan) { this.out.appendLine('📋 Plano:\n' + plan.trim() + '\n') }
+
+    const hint = this.testCommand ? `\nComando de teste sugerido: \`${this.testCommand}\`.` : ''
+    const mcpNote = this.mcpTools.length
+      ? '\nFerramentas MCP disponíveis (use {"tool":"mcp","server":"S","name":"N","args":{...}}):\n' +
+        this.mcpTools.map((t) => `- ${t.server}/${t.name}: ${t.description || ''}`).join('\n')
+      : ''
+    const messages: Array<{ role: string; content: string }> = [
+      { role: 'system', content: SYSTEM + hint + mcpNote },
+      { role: 'user', content: `Tarefa: ${task}\n\nPlano:\n${(plan || '').trim()}\n\nSiga o plano, um passo por vez.` },
     ]
 
     for (let step = 1; step <= this.maxSteps; step++) {
@@ -103,6 +119,9 @@ export class AgentRunner {
       }
       if (a.tool === 'run' && a.command) {
         return await this.runCommand(a.command)
+      }
+      if (a.tool === 'mcp' && a.server && a.name && this.mcpCall) {
+        return truncate(await this.mcpCall(a.server, a.name, a.args ?? {}), 3000)
       }
       return `ferramenta desconhecida: ${a.tool}`
     } catch (e) {

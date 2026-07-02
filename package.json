@@ -2,7 +2,7 @@
   "name": "mangaba-ai",
   "displayName": "Mangaba AI",
   "description": "Chat com a IA brasileira e soberana Mangaba, dentro do VS Code — powered pelos modelos self-hosted (OpenAI-compatível).",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "publisher": "mangaba",
   "icon": "media/icon-128.png",
   "license": "MIT",
@@ -127,6 +127,12 @@
         "title": "Agente autônomo (tarefa)",
         "category": "Mangaba AI",
         "icon": "$(run-all)"
+      },
+      {
+        "command": "mangaba.undoAgent",
+        "title": "Desfazer sessão do agente",
+        "category": "Mangaba AI",
+        "icon": "$(discard)"
       }
     ],
     "keybindings": [
@@ -318,6 +324,33 @@
           "maximum": 40,
           "markdownDescription": "Máximo de passos do laço agêntico.",
           "order": 16
+        },
+        "mangaba.mcpServers": {
+          "type": "array",
+          "default": [],
+          "markdownDescription": "Servidores **MCP** (stdio) disponíveis para o agente. Ex.: `[{ \"name\": \"fs\", \"command\": \"npx\", \"args\": [\"-y\",\"@modelcontextprotocol/server-filesystem\",\".\"] }]`.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "command": {
+                "type": "string"
+              },
+              "args": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "name",
+              "command"
+            ]
+          },
+          "order": 17
         }
       }
     },

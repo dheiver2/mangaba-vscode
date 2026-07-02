@@ -2,6 +2,11 @@
 
 Todas as mudanças relevantes da extensão **Mangaba AI para VS Code**.
 
+## [0.11.0]
+- **Planejamento** — o agente esboça um plano numerado antes de agir.
+- **Checkpoints/rollback** — *Desfazer sessão do agente* restaura todos os arquivos que ele alterou.
+- **Suporte a MCP** — conecte servidores MCP (stdio) em `mangaba.mcpServers`; o agente usa as ferramentas deles.
+
 ## [0.10.0]
 - **Agente autônomo (laço agêntico)** — lê/edita arquivos, **executa comandos no terminal com aprovação** e **auto-verifica** (roda testes e corrige) até concluir. Comando *Agente autônomo*; configs `commandApproval`, `testCommand`, `agentMaxSteps`.
 
