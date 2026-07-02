@@ -2,7 +2,7 @@
   "name": "mangaba-ai",
   "displayName": "Mangaba AI",
   "description": "Chat com a IA brasileira e soberana Mangaba, dentro do VS Code — powered pelos modelos self-hosted (OpenAI-compatível).",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "publisher": "mangaba",
   "icon": "media/icon-128.png",
   "license": "MIT",
