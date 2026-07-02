@@ -81,11 +81,38 @@ body {
 .dots i:nth-child(3) { animation-delay: .30s; }
 @keyframes bounce { 0%,60%,100% { transform: translateY(0); opacity:.4 } 30% { transform: translateY(-4px); opacity:1 } }
 
+/* imagens em mensagens */
+.att-img {
+  max-width: 220px; max-height: 220px;
+  border-radius: 8px; margin: 6px 0; display: block;
+  border: 1px solid var(--vscode-panel-border, rgba(128,128,128,.25));
+}
+
+/* prévia da imagem anexada (antes de enviar) */
+.attachments { padding: 0 10px; }
+.att-chip { position: relative; display: inline-block; margin-top: 6px; }
+.att-chip img {
+  height: 52px; width: auto; border-radius: 8px;
+  border: 1px solid var(--vscode-panel-border, rgba(128,128,128,.3));
+}
+.att-chip button {
+  position: absolute; top: -6px; right: -6px;
+  width: 18px; height: 18px; border: none; border-radius: 50%;
+  background: var(--mangaba-dim); color: #fff; cursor: pointer;
+  font-size: 12px; line-height: 1; display: flex; align-items: center; justify-content: center;
+}
+
 /* composer */
 .composer {
   display: flex; gap: 8px; align-items: flex-end;
   padding: 10px; border-top: 1px solid var(--vscode-panel-border, rgba(128,128,128,.25));
 }
+.attach-btn {
+  flex-shrink: 0; width: 34px; height: 34px; border-radius: 10px; cursor: pointer;
+  background: transparent; border: 1px solid var(--vscode-input-border, rgba(128,128,128,.3));
+  font-size: 15px; line-height: 1;
+}
+.attach-btn:hover { border-color: var(--mangaba); }
 #input {
   flex: 1; resize: none; max-height: 160px;
   padding: 8px 10px; border-radius: 10px;

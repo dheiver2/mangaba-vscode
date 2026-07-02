@@ -15,12 +15,49 @@
   const $form = document.getElementById('composer')
   const $send = document.getElementById('send')
   const $model = document.getElementById('model')
+  const $attach = document.getElementById('attach')
+  const $file = document.getElementById('file')
+  const $attachments = document.getElementById('attachments')
+
+  let pendingImage = null // dataURL da imagem anexada
 
   // Pede ao host a lista de modelos do servidor Mangaba (/v1/models).
   vscode.postMessage({ type: 'getModels' })
   $model.addEventListener('change', () => {
     vscode.postMessage({ type: 'setModel', model: $model.value })
   })
+
+  // ── Anexar imagem (para o modelo de visão) ──────────────────────────────
+  $attach.addEventListener('click', () => $file.click())
+  $file.addEventListener('change', () => {
+    const f = $file.files && $file.files[0]
+    if (f) readImage(f)
+    $file.value = ''
+  })
+  $input.addEventListener('paste', (e) => {
+    const items = (e.clipboardData && e.clipboardData.items) || []
+    for (const it of items) {
+      if (it.type && it.type.indexOf('image') === 0) {
+        const f = it.getAsFile()
+        if (f) { readImage(f); e.preventDefault() }
+        break
+      }
+    }
+  })
+  function readImage(file) {
+    const r = new FileReader()
+    r.onload = () => { pendingImage = r.result; renderAttachment() }
+    r.readAsDataURL(file)
+  }
+  function renderAttachment() {
+    $attachments.innerHTML = ''
+    if (!pendingImage) return
+    const chip = document.createElement('div')
+    chip.className = 'att-chip'
+    chip.innerHTML = '<img src="' + pendingImage + '" /><button title="Remover" aria-label="Remover">×</button>'
+    chip.querySelector('button').addEventListener('click', () => { pendingImage = null; renderAttachment() })
+    $attachments.appendChild(chip)
+  }
 
   /** @type {{role:string,content:string}[]} */
   let history = [SYSTEM]
@@ -54,13 +91,23 @@
     if (e) e.remove()
   }
 
-  function addMessage(role, text) {
+  function contentToHtml(content) {
+    if (typeof content === 'string') return renderMarkdown(content)
+    let html = ''
+    for (const part of content) {
+      if (part.type === 'text' && part.text) html += renderMarkdown(part.text)
+      else if (part.type === 'image_url' && part.image_url) html += '<img class="att-img" src="' + part.image_url.url + '" alt="imagem" />'
+    }
+    return html
+  }
+
+  function addMessage(role, content) {
     clearEmpty()
     const el = document.createElement('div')
     el.className = 'msg ' + role
     const bubble = document.createElement('div')
     bubble.className = 'bubble'
-    bubble.innerHTML = renderMarkdown(text)
+    bubble.innerHTML = contentToHtml(content)
     el.appendChild(bubble)
     $messages.appendChild(el)
     $messages.scrollTop = $messages.scrollHeight
@@ -75,10 +122,20 @@
   }
 
   function send(text) {
-    const content = (text ?? $input.value).trim()
-    if (!content || streaming) return
+    const txt = (text ?? $input.value).trim()
+    if ((!txt && !pendingImage) || streaming) return
+    let content
+    if (pendingImage) {
+      content = []
+      if (txt) content.push({ type: 'text', text: txt })
+      content.push({ type: 'image_url', image_url: { url: pendingImage } })
+    } else {
+      content = txt
+    }
     history.push({ role: 'user', content })
     addMessage('user', content)
+    pendingImage = null
+    renderAttachment()
     $input.value = ''
     autoresize()
     history.push({ role: 'assistant', content: '' })

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode'
 
-interface Msg { role: 'system' | 'user' | 'assistant'; content: string }
+type ContentPart = { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }
+interface Msg { role: 'system' | 'user' | 'assistant'; content: string | ContentPart[] }
 
 function cfg() {
   const c = vscode.workspace.getConfiguration('mangaba')
@@ -169,10 +170,13 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
       <p class="hint">IA brasileira e soberana, dentro do seu editor.</p>
     </div>
   </div>
+  <div id="attachments" class="attachments"></div>
   <form id="composer" class="composer">
+    <button id="attach" type="button" class="attach-btn" title="Anexar imagem (use o modelo mangaba-vision-q8)" aria-label="Anexar imagem">🖼️</button>
     <textarea id="input" rows="1" placeholder="Pergunte à Mangaba…  (Enter envia, Shift+Enter quebra linha)"></textarea>
     <button id="send" type="submit" title="Enviar" aria-label="Enviar">➤</button>
   </form>
+  <input id="file" type="file" accept="image/*" hidden />
   <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
 </html>`
