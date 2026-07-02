@@ -2,7 +2,7 @@
   "name": "mangaba-ai",
   "displayName": "Mangaba AI",
   "description": "Chat com a IA brasileira e soberana Mangaba, dentro do VS Code — powered pelos modelos self-hosted (OpenAI-compatível).",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "publisher": "mangaba",
   "icon": "media/icon-128.png",
   "license": "MIT",
@@ -30,7 +30,8 @@
       { "command": "mangaba.openChat", "title": "Abrir chat", "category": "Mangaba AI" },
       { "command": "mangaba.newChat", "title": "Nova conversa", "category": "Mangaba AI", "icon": "$(add)" },
       { "command": "mangaba.explainSelection", "title": "Explicar seleção", "category": "Mangaba AI", "icon": "$(sparkle)" },
-      { "command": "mangaba.editSelection", "title": "Editar seleção (IA)", "category": "Mangaba AI", "icon": "$(wand)" }
+      { "command": "mangaba.editSelection", "title": "Editar seleção (IA)", "category": "Mangaba AI", "icon": "$(wand)" },
+      { "command": "mangaba.agentTask", "title": "Tarefa no projeto (agente)", "category": "Mangaba AI", "icon": "$(rocket)" }
     ],
     "keybindings": [
       { "command": "mangaba.openChat", "key": "ctrl+alt+m", "mac": "cmd+alt+m" },

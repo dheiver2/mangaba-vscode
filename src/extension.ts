@@ -164,6 +164,51 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
     } catch { return null }
   }
 
+  /** Agente: dada uma tarefa, o modelo devolve arquivos completos a criar/alterar. */
+  async agentTask(instruction: string): Promise<Array<{ path: string; content: string }>> {
+    const c = cfg()
+    if (!c.baseUrl) return []
+    const parts: string[] = []
+    const ed = this.activeEditor()
+    if (ed && ed.document.uri.scheme === 'file') {
+      parts.push(`Arquivo ativo \`${vscode.workspace.asRelativePath(ed.document.uri)}\` (${ed.document.languageId}):\n\`\`\`\n${ed.document.getText().slice(0, c.maxContextChars)}\n\`\`\``)
+    }
+    try {
+      const uris = await vscode.workspace.findFiles('**/*', '**/{node_modules,dist,.git}/**', 80)
+      if (uris.length) parts.push('Arquivos do projeto:\n' + uris.map((u) => vscode.workspace.asRelativePath(u)).join('\n'))
+    } catch { /* sem workspace */ }
+
+    const sys =
+      'Você é um agente de código no VS Code. Para CADA arquivo a criar ou alterar, devolva um bloco EXATAMENTE neste formato:\n' +
+      '<<<FILE: caminho/relativo.ext>>>\n<conteúdo COMPLETO do arquivo>\n<<<END>>>\n' +
+      'Devolva o arquivo inteiro (não só o trecho). Não escreva nada fora dos blocos.'
+    const user = `Tarefa: ${instruction}\n\n${parts.join('\n\n')}`
+    try {
+      const res = await fetch(`${c.baseUrl}/chat/completions`, {
+        method: 'POST', headers: authHeaders(c),
+        body: JSON.stringify({
+          model: currentModel(this.ctx),
+          messages: [{ role: 'system', content: sys }, { role: 'user', content: user }],
+          temperature: 0.2, max_tokens: c.maxTokens, stream: false,
+        }),
+      })
+      if (!res.ok) return []
+      const d = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> }
+      const text = d.choices?.[0]?.message?.content ?? ''
+      const out: Array<{ path: string; content: string }> = []
+      const re = /<<<FILE:\s*(.+?)>>>\s*\n([\s\S]*?)<<<END>>>/g
+      let mm: RegExpExecArray | null
+      while ((mm = re.exec(text))) {
+        const path = mm[1].trim().replace(/^["'`]+|["'`]+$/g, '')
+        const content = mm[2].replace(/^\s*```[a-zA-Z0-9_-]*\n?/, '').replace(/\n?```\s*$/, '')
+        if (path) out.push({ path, content })
+      }
+      return out
+    } catch {
+      return []
+    }
+  }
+
   private async sendModels() {
     const wv = this.view?.webview
     if (!wv) return
@@ -395,6 +440,57 @@ export function activate(ctx: vscode.ExtensionContext) {
           vscode.window.showInformationMessage('Mangaba: seleção editada (Ctrl/Cmd+Z para desfazer).')
         },
       )
+    }),
+    vscode.commands.registerCommand('mangaba.agentTask', async () => {
+      const folder = vscode.workspace.workspaceFolders?.[0]
+      if (!folder) { vscode.window.showWarningMessage('Abra uma pasta/projeto para o agente trabalhar.'); return }
+      const instruction = await vscode.window.showInputBox({
+        prompt: 'Descreva a tarefa — a Mangaba vai propor edições em arquivos',
+        placeHolder: 'ex.: crie um util de validação de email e use no formulário',
+      })
+      if (!instruction) return
+
+      const files = await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: 'Mangaba (agente) planejando as edições…' },
+        () => provider.agentTask(instruction),
+      )
+      if (!files.length) {
+        vscode.window.showWarningMessage('Mangaba: o agente não retornou edições (o modelo pode ter estourado o contexto — tente uma tarefa mais específica).')
+        return
+      }
+
+      let applied = 0
+      for (const f of files) {
+        const uri = vscode.Uri.joinPath(folder.uri, f.path)
+        let existing = ''
+        let isNew = false
+        try { existing = Buffer.from(await vscode.workspace.fs.readFile(uri)).toString('utf8') } catch { isNew = true }
+
+        // Diff de revisão (documentos virtuais dos dois lados).
+        const stamp = Date.now() + '-' + applied
+        const leftUri  = vscode.Uri.parse(`${DIFF_SCHEME}:${f.path} (atual)`).with({ query: stamp + 'L' })
+        const rightUri = vscode.Uri.parse(`${DIFF_SCHEME}:${f.path} (proposto)`).with({ query: stamp + 'R' })
+        diffContents.set(leftUri.toString(), existing)
+        diffContents.set(rightUri.toString(), f.content)
+        await vscode.commands.executeCommand('vscode.diff', leftUri, rightUri, `Mangaba — ${f.path}${isNew ? '  (novo arquivo)' : ''}`)
+        const pick = await vscode.window.showInformationMessage(`Aplicar ${f.path}?`, 'Aplicar', 'Pular')
+        diffContents.delete(leftUri.toString())
+        diffContents.delete(rightUri.toString())
+
+        if (pick === 'Aplicar') {
+          const we = new vscode.WorkspaceEdit()
+          if (isNew) {
+            we.createFile(uri, { overwrite: true, contents: Buffer.from(f.content, 'utf8') })
+          } else {
+            const doc = await vscode.workspace.openTextDocument(uri)
+            we.replace(uri, new vscode.Range(doc.positionAt(0), doc.positionAt(doc.getText().length)), f.content)
+          }
+          await vscode.workspace.applyEdit(we)
+          await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+          applied++
+        }
+      }
+      vscode.window.showInformationMessage(`Mangaba (agente): ${applied} de ${files.length} arquivo(s) aplicado(s).`)
     }),
   )
 }

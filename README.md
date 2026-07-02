@@ -1,6 +1,6 @@
 # Mangaba AI para VS Code
 
-[![Version](https://img.shields.io/badge/version-0.5.0-E94A12)](https://github.com/dheiver2/mangaba-vscode)
+[![Version](https://img.shields.io/badge/version-0.6.0-E94A12)](https://github.com/dheiver2/mangaba-vscode)
 [![VS Code](https://img.shields.io/badge/VS%20Code-1.85%2B-007ACC?logo=visualstudiocode&logoColor=white)](https://code.visualstudio.com/)
 [![License](https://img.shields.io/badge/license-MIT-3DA639)](LICENSE)
 [![Feito no Brasil](https://img.shields.io/badge/Feito%20no-Brasil-009B3A)](https://mangaba.chat)
@@ -15,6 +15,7 @@
 - **Editar código pelo chat** — o assistente enxerga o **arquivo/seleção ativos** e cada bloco de código da resposta ganha botões **Aplicar / Inserir / Copiar** direto no editor.
 - **Diff de revisão** — antes de aplicar, mostra um **diff (atual × proposto)** para você aceitar ou rejeitar (como no Cursor). Desativável em `mangaba.reviewBeforeApply`.
 - **Autocompletar inline (ghost text)** — sugestões enquanto você digita (opt-in em `mangaba.inlineCompletions`; melhor com endpoint rápido).
+- **Agente multi-arquivo** — *Tarefa no projeto (agente)*: descreva uma tarefa e a Mangaba propõe edições em **vários arquivos** (criar/alterar), cada uma revisada em diff antes de aplicar.
 - **Editar seleção (IA)** — selecione um trecho, descreva a mudança (`Ctrl/Cmd+Alt+K`) e a Mangaba reescreve e aplica no lugar.
 - **Explicar seleção** — selecione um trecho no editor e explique em português (menu de contexto ou atalho).
 - **Soberano por padrão** — as chamadas saem do host da extensão (Node), não do webview: sem CORS e sem expor URL/credencial no cliente.
