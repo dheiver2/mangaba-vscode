@@ -7,10 +7,15 @@ import { stripFences } from './pure'
 type ContentPart = { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }
 interface Msg { role: 'system' | 'user' | 'assistant'; content: string | ContentPart[] }
 
+// Servidor Mangaba público — usado por padrão para TODOS os usuários.
+// Fallback no código (não só no default do manifesto): garante funcionamento
+// mesmo com settings antigas/vazias herdadas de versões anteriores.
+const DEFAULT_BASE_URL = 'https://walton-undepreciatory-tracee.ngrok-free.dev/v1'
+
 function cfg() {
   const c = vscode.workspace.getConfiguration('mangaba')
   return {
-    baseUrl:          (c.get<string>('baseUrl') || '').replace(/\/+$/, ''),
+    baseUrl:          ((c.get<string>('baseUrl') || '').trim() || DEFAULT_BASE_URL).replace(/\/+$/, ''),
     model:            c.get<string>('model') || 'mangaba-pro',
     apiKey:           c.get<string>('apiKey') || '',
     temperature:      c.get<number>('temperature') ?? 0.7,
