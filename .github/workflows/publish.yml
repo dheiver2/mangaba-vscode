@@ -15,6 +15,9 @@ jobs:
   platform:
     strategy:
       fail-fast: false
+      # A Marketplace limita publishes concorrentes do mesmo PAT (rate limit
+      # "Concurrency"/VSID) — publica uma plataforma por vez.
+      max-parallel: 1
       matrix:
         include:
           - os: macos-14
@@ -34,13 +37,22 @@ jobs:
         if: ${{ env.VSCE_PAT != '' }}
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        # vsce lê VSCE_PAT do ambiente (cross-platform: bash e PowerShell).
+        shell: bash
         # --skip-duplicate: rerun/dispatch não falha se a versão já existir.
-        run: npx --yes @vscode/vsce publish --target ${{ matrix.target }} --skip-duplicate
+        # Retry com backoff: a Marketplace aplica rate limit por PAT.
+        run: |
+          for i in 1 2 3; do
+            npx --yes @vscode/vsce publish --target ${{ matrix.target }} --skip-duplicate && exit 0
+            echo "tentativa $i falhou; aguardando $((i*60))s…"; sleep $((i*60))
+          done
+          exit 1
 
   # 2) Build UNIVERSAL leve — fallback para plataformas não listadas acima.
   #    RAG via Ollama (mangaba.embeddingsBackend = ollama).
+  #    needs: serializa com os publishes por plataforma (rate limit do PAT).
   universal:
+    needs: platform
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -52,5 +64,10 @@ jobs:
         if: ${{ env.VSCE_PAT != '' }}
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        # vsce lê VSCE_PAT do ambiente (cross-platform: bash e PowerShell).
-        run: npx --yes @vscode/vsce publish --no-dependencies --skip-duplicate
+        shell: bash
+        run: |
+          for i in 1 2 3; do
+            npx --yes @vscode/vsce publish --no-dependencies --skip-duplicate && exit 0
+            echo "tentativa $i falhou; aguardando $((i*60))s…"; sleep $((i*60))
+          done
+          exit 1
