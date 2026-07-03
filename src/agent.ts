@@ -1,7 +1,7 @@
 import * as vscode from 'vscode'
 import { exec } from 'child_process'
 import type { McpTool } from './mcp'
-import { parseAction as parseActionPure } from './pure'
+import { parseAction as parseActionPure, safeRelPath } from './pure'
 
 export type ChatFn = (messages: Array<{ role: string; content: string }>) => Promise<string | null>
 export type ApplyFileFn = (relPath: string, content: string) => Promise<boolean>
@@ -9,7 +9,18 @@ export type McpCallFn = (server: string, name: string, args: unknown) => Promise
 
 interface Action { tool: string; path?: string; content?: string; command?: string; summary?: string; server?: string; name?: string; args?: unknown }
 
-const DANGEROUS = /\b(rm\s+-rf|mkfs|dd\s+if=|:\(\)\s*\{|shutdown|reboot|>\s*\/dev\/sd|chmod\s+-R\s+777\s+\/|git\s+push\s+--force)/i
+// Comandos destrutivos, escalonamento de privilégio e download-e-executa.
+const DANGEROUS = new RegExp([
+  'rm\\s+(-[a-z]*r[a-z]*f|-[a-z]*f[a-z]*r)', 'mkfs', 'dd\\s+if=', ':\\(\\)\\s*\\{',
+  'shutdown', 'reboot', 'halt\\b', 'poweroff', '>\\s*/dev/sd', 'chmod\\s+-R\\s+777\\s+/',
+  'git\\s+push\\s+--force', 'git\\s+reset\\s+--hard\\s+origin',
+  '\\bsudo\\b', '\\bdoas\\b', 'launchctl', 'systemctl\\s+(stop|disable|mask)',
+  '(curl|wget)[^|;&]*\\|\\s*(ba)?sh', 'base64\\s+(-d|--decode)[^|]*\\|\\s*(ba)?sh',
+  'eval\\s+"?\\$\\(', 'history\\s+-c', 'crontab\\s+-r',
+  '/etc/(passwd|shadow|sudoers)', '\\.ssh/(id_|authorized_keys)',
+  'security\\s+(dump|find-generic|find-internet)', 'defaults\\s+write\\s+com\\.apple',
+  'osascript', 'killall\\b', 'diskutil\\s+(erase|partition)',
+].join('|'), 'i')
 
 function truncate(s: string, n = 2000): string {
   return s.length > n ? s.slice(0, n) + `\n…(+${s.length - n} chars truncados)` : s
@@ -104,12 +115,16 @@ export class AgentRunner {
         return uris.map((u) => vscode.workspace.asRelativePath(u)).join('\n') || '(vazio)'
       }
       if (a.tool === 'read' && a.path) {
-        const buf = await vscode.workspace.fs.readFile(vscode.Uri.joinPath(this.root, a.path))
+        const safe = safeRelPath(a.path)
+        if (!safe) return `RECUSADO: caminho fora do workspace (${a.path})`
+        const buf = await vscode.workspace.fs.readFile(vscode.Uri.joinPath(this.root, safe))
         return truncate(Buffer.from(buf).toString('utf8'), 6000)
       }
       if (a.tool === 'write' && a.path && typeof a.content === 'string') {
-        const ok = await this.applyFile(a.path, a.content)
-        return ok ? `escrito: ${a.path}` : `usuário cancelou a escrita de ${a.path}`
+        const safe = safeRelPath(a.path)
+        if (!safe) return `RECUSADO: caminho fora do workspace (${a.path})`
+        const ok = await this.applyFile(safe, a.content)
+        return ok ? `escrito: ${safe}` : `usuário cancelou a escrita de ${safe}`
       }
       if (a.tool === 'run' && a.command) {
         return await this.runCommand(a.command)

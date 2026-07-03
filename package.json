@@ -75,6 +75,12 @@
         "icon": "$(export)"
       },
       {
+        "command": "mangaba.setApiKey",
+        "title": "Definir API key (seguro)",
+        "category": "Mangaba AI",
+        "icon": "$(key)"
+      },
+      {
         "command": "mangaba.explainSelection",
         "title": "Explicar seleção",
         "category": "Mangaba AI",
@@ -228,8 +234,15 @@
         "mangaba.apiKey": {
           "type": "string",
           "default": "",
-          "markdownDescription": "Bearer token (opcional — o Mangaba self-hosted é *keyless*).",
+          "scope": "application",
+          "markdownDescription": "**Obsoleto** — use o comando *Mangaba AI: Definir API key (seguro)*, que guarda a chave criptografada no sistema. Este campo existe só para migração.",
           "order": 3
+        },
+        "mangaba.redactSecrets": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "**Redige segredos** (chaves de API, tokens, senhas, chaves privadas) do contexto e dos anexos antes de enviar ao modelo.",
+          "order": 12
         },
         "mangaba.temperature": {
           "type": "number",
@@ -310,17 +323,19 @@
             "never"
           ],
           "default": "always",
+          "scope": "application",
           "enumDescriptions": [
             "Pede aprovação a cada comando (recomendado)",
             "Roda comandos sem perguntar (cuidado)"
           ],
-          "markdownDescription": "Aprovação de comandos de terminal do **agente autônomo**.",
+          "markdownDescription": "Aprovação de comandos de terminal do **agente autônomo**. (Só nas configurações de usuário — repositórios não podem alterar.)",
           "order": 14
         },
         "mangaba.testCommand": {
           "type": "string",
           "default": "",
-          "markdownDescription": "Comando de teste sugerido ao agente (ex.: `npm test`, `pytest`). Ajuda a auto-verificação.",
+          "scope": "application",
+          "markdownDescription": "Comando de teste sugerido ao agente (ex.: `npm test`, `pytest`). (Só nas configurações de usuário — repositórios não podem alterar.)",
           "order": 15
         },
         "mangaba.agentMaxSteps": {
@@ -334,7 +349,8 @@
         "mangaba.mcpServers": {
           "type": "array",
           "default": [],
-          "markdownDescription": "Servidores **MCP** (stdio) disponíveis para o agente. Ex.: `[{ \"name\": \"fs\", \"command\": \"npx\", \"args\": [\"-y\",\"@modelcontextprotocol/server-filesystem\",\".\"] }]`.",
+          "scope": "application",
+          "markdownDescription": "Servidores **MCP** (stdio) disponíveis para o agente. Ex.: `[{ \"name\": \"fs\", \"command\": \"npx\", \"args\": [\"-y\",\"@modelcontextprotocol/server-filesystem\",\".\"] }]`. (Só nas configurações de usuário — repositórios não podem alterar.)",
           "items": {
             "type": "object",
             "properties": {

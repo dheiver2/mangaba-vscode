@@ -18,3 +18,10 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      # Auditoria de dependências de produção. A cadeia onnxruntime-web →
+      # onnx-proto → protobufjs é conhecida, NÃO é empacotada no vsix
+      # (.vscodeignore) e nunca carrega em Node — vira warning, não falha.
+      - name: npm audit (produção)
+        run: |
+          npm audit --omit=dev --audit-level=high || \
+            echo "::warning::vulnerabilidades em cadeia onnxruntime-web (excluída do vsix; não carrega em Node)"

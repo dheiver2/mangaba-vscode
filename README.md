@@ -144,9 +144,17 @@ Conecte servidores **Model Context Protocol** e o agente usa as ferramentas dele
 
 ---
 
-## Privacidade e soberania
+## Privacidade, segurança e soberania
 
 O tráfego vai **apenas para o endpoint configurado** (o servidor Mangaba por padrão, ou o seu). Embeddings do RAG e extração de PDF rodam **localmente**. Sem telemetria. Para soberania total (governo, bancos, saúde), aponte `mangaba.baseUrl` para a **sua** infraestrutura — nada sai dela.
+
+Defesas embutidas:
+
+- **Redação de segredos** — chaves de API, tokens, senhas e chaves privadas são removidos do contexto/anexos antes do envio (`mangaba.redactSecrets`, ligado por padrão).
+- **API key criptografada** — comando *Definir API key (seguro)* usa o cofre do sistema (nunca texto plano).
+- **`https://` obrigatório** fora de localhost.
+- **Agente confinado ao workspace** (anti path-traversal), **blocklist de comandos destrutivos** e **aprovação** para cada comando de terminal e servidor MCP.
+- Configurações sensíveis (**MCP, aprovação de comandos**) só valem no escopo do usuário — repositórios abertos não conseguem injetá-las.
 
 ## Requisitos
 

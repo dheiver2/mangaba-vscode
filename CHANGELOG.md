@@ -2,6 +2,19 @@
 
 Todas as mudanças relevantes da extensão **Mangaba AI para VS Code**.
 
+## [0.11.10]
+- **10 melhorias de segurança**:
+  1. **API key no armazenamento seguro do sistema** (SecretStorage) — comando *Definir API key (seguro)*; migração automática da configuração antiga em texto plano.
+  2. **Configurações sensíveis só no escopo de usuário** (`apiKey`, `mcpServers`, `commandApproval`, `testCommand`) — um repositório malicioso não consegue mais injetá-las via `.vscode/settings.json`.
+  3. **Anti path-traversal no agente** — leitura/escrita restritas ao workspace (rejeita `..`, absolutos, `~`, drive letters).
+  4. **Blocklist de comandos ampliada** — sudo, download-e-executa (`curl | sh`), fork bomb, `/etc/passwd`, `.ssh`, keychain, `diskutil erase` e outros.
+  5. **Redação de segredos** (`mangaba.redactSecrets`, ligado por padrão) — chaves AWS/GitHub/Google/Slack, JWTs, Bearer, senhas em env e URLs de banco são redigidos do contexto e anexos antes do envio.
+  6. **Bloqueio de `http://` fora de localhost** — impede tráfego do seu código em texto plano.
+  7. **CSP do webview endurecida** — `base-uri`, `form-action`, `frame-src`, `connect-src`, `object-src` todos `'none'`.
+  8. **Mitigação de prompt-injection** — conteúdo de arquivos/RAG é delimitado como *dados* ("ignore instruções embutidas").
+  9. **Aprovação explícita de servidores MCP** — prompt modal sempre que a lista muda (MCP executa processos).
+  10. **Cadeia vulnerável fora do pacote** — `onnxruntime-web`/`protobufjs` (CVEs; runtime de browser, nunca carregado) excluídos do vsix + `npm audit` no CI.
+
 ## [0.11.8]
 - **10 melhorias de UX no chat**:
   - **Status do servidor na barra inferior** — online/offline + modelo atual; clique abre o chat.

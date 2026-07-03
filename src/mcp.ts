@@ -73,11 +73,28 @@ class McpServer {
 export class McpManager {
   private servers: McpServer[] = []
   private started = false
+  constructor(private ctx?: vscode.ExtensionContext) {}
 
   async init(): Promise<void> {
     if (this.started) return
     this.started = true
     const cfg = vscode.workspace.getConfiguration('mangaba').get<Array<{ name: string; command: string; args?: string[] }>>('mcpServers') || []
+    if (!cfg.length) return
+
+    // Segurança: MCP = executar processos na máquina. Pede aprovação
+    // explícita sempre que a lista de servidores muda.
+    const fingerprint = JSON.stringify(cfg.map((s) => [s?.name, s?.command, s?.args]))
+    const approved = this.ctx?.globalState.get<string>('mangaba.mcpApproved')
+    if (this.ctx && fingerprint !== approved) {
+      const list = cfg.map((s) => `• ${s?.name}: ${s?.command} ${(s?.args ?? []).join(' ')}`).join('\n')
+      const pick = await vscode.window.showWarningMessage(
+        `Mangaba: iniciar estes servidores MCP (executam processos na sua máquina)?\n\n${list}`,
+        { modal: true }, 'Permitir', 'Bloquear',
+      )
+      if (pick !== 'Permitir') return
+      await this.ctx.globalState.update('mangaba.mcpApproved', fingerprint)
+    }
+
     const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
     for (const s of cfg) {
       if (!s?.name || !s?.command) continue

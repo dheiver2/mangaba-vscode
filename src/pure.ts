@@ -28,6 +28,56 @@ export function chunkText(text: string, size = 900, overlap = 150): string[] {
   return out.length ? out : [text]
 }
 
+/**
+ * Valida um caminho relativo vindo do modelo (agente): precisa ficar DENTRO
+ * do workspace. Rejeita absolutos, drive letters, `..` e bytes nulos.
+ * Retorna o caminho normalizado (separador /) ou null se inseguro.
+ */
+export function safeRelPath(rel: string): string | null {
+  if (!rel || rel.includes('\0')) return null
+  const norm = rel.replace(/\\/g, '/').trim()
+  if (norm.startsWith('/') || norm.startsWith('~') || /^[a-zA-Z]:/.test(norm)) return null
+  const parts = norm.split('/').filter((p) => p !== '' && p !== '.')
+  if (parts.some((p) => p === '..')) return null
+  return parts.length ? parts.join('/') : null
+}
+
+// Padrões de segredos comuns (chaves de nuvem, tokens, chaves privadas, senhas em env).
+const SECRET_PATTERNS: Array<[RegExp, string]> = [
+  [/-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g, '[CHAVE PRIVADA REDIGIDA]'],
+  [/\b(AKIA|ASIA)[0-9A-Z]{16}\b/g, '[AWS_KEY_REDIGIDA]'],
+  [/\bgh[pousr]_[A-Za-z0-9]{20,}\b/g, '[GITHUB_TOKEN_REDIGIDO]'],
+  [/\bsk-[A-Za-z0-9_-]{20,}\b/g, '[API_KEY_REDIGIDA]'],
+  [/\bxox[baprs]-[A-Za-z0-9-]{10,}\b/g, '[SLACK_TOKEN_REDIGIDO]'],
+  [/\bAIza[0-9A-Za-z_-]{35}\b/g, '[GOOGLE_KEY_REDIGIDA]'],
+  [/\beyJ[A-Za-z0-9_-]{15,}\.[A-Za-z0-9_-]{15,}\.[A-Za-z0-9_-]{10,}\b/g, '[JWT_REDIGIDO]'],
+  [/(\b(?:password|passwd|senha|secret|token|api[_-]?key)\s*[=:]\s*["']?)[^\s"']{8,}/gi, '$1[REDIGIDO]'],
+  [/(Authorization:\s*(?:Bearer|Basic)\s+)[A-Za-z0-9._~+/=-]{12,}/gi, '$1[REDIGIDO]'],
+  [/((?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis|amqp):\/\/[^:\s]+:)[^@\s]+@/gi, '$1[REDIGIDO]@'],
+]
+
+/** Redige segredos conhecidos de um texto antes de enviá-lo ao modelo. */
+export function redactSecrets(text: string): { text: string; redacted: number } {
+  let out = text
+  let count = 0
+  for (const [re, sub] of SECRET_PATTERNS) {
+    out = out.replace(re, (...args) => {
+      count++
+      // suporta grupo $1 no replacement (args[1] é o 1º grupo capturado)
+      return sub.replace('$1', typeof args[1] === 'string' ? args[1] : '')
+    })
+  }
+  return { text: out, redacted: count }
+}
+
+/** true se a URL usa transporte inseguro (http) fora de localhost. */
+export function isInsecureUrl(url: string): boolean {
+  const m = url.match(/^http:\/\/([^/:]+)/i)
+  if (!m) return false
+  const host = m[1].toLowerCase()
+  return !(host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '0.0.0.0' || host.endsWith('.local'))
+}
+
 /** Estimativa grosseira de tokens (~4 chars/token, média PT/código). */
 export function estimateTokens(text: string): number {
   return text ? Math.ceil(text.length / 4) : 0
