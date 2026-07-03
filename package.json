@@ -2,7 +2,7 @@
   "name": "mangaba-ai",
   "displayName": "Mangaba AI",
   "description": "O copiloto de IA brasileiro e soberano: chat, agente autônomo, edição de código, anexos (PDF/imagem) e RAG — funciona de fábrica ou 100% na sua infra (OpenAI-compatível).",
-  "version": "0.11.9",
+  "version": "0.11.10",
   "publisher": "mangaba-ai",
   "icon": "media/icon-128.png",
   "license": "MIT",
