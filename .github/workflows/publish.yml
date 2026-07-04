@@ -33,6 +33,25 @@ jobs:
         with: { node-version: 20 }
       - run: npm ci
       - run: npm run build
+      # onnxruntime-node empacota os binários nativos das 6 combinações de SO/arquitetura
+      # dentro do MESMO pacote npm (não são optionalDependencies por plataforma), então
+      # `vsce publish --target` sozinho não os remove. Sem isso, cada publish carrega
+      # ~85MB/1700 arquivos à toa — o upload/scan demora e colide com o rate limit
+      # "Concurrency" da Marketplace.
+      - name: Podar binários de outras plataformas (onnxruntime-node)
+        shell: bash
+        run: |
+          target="${{ matrix.target }}"
+          os_part="${target%-*}"
+          arch_part="${target##*-}"
+          dir="node_modules/onnxruntime-node/bin/napi-v3"
+          for os in linux darwin win32; do
+            for arch in x64 arm64; do
+              if [ "$os" != "$os_part" ] || [ "$arch" != "$arch_part" ]; then
+                rm -rf "$dir/$os/$arch"
+              fi
+            done
+          done
       - name: Publish (${{ matrix.target }})
         if: ${{ env.VSCE_PAT != '' }}
         env:
@@ -60,6 +79,11 @@ jobs:
         with: { node-version: 20 }
       - run: npm ci
       - run: npm run build
+      # Build "leve": RAG local (transformers.js/onnxruntime-node) fica de fora —
+      # use mangaba.embeddingsBackend=ollama (o código já trata a ausência com
+      # uma mensagem amigável). Sem isso o publish carregava ~85MB à toa.
+      - name: Remover deps de RAG local (usa Ollama nesta build)
+        run: rm -rf node_modules/onnxruntime-node node_modules/@xenova
       - name: Publish (universal, leve)
         if: ${{ env.VSCE_PAT != '' }}
         env:
