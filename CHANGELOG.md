@@ -2,6 +2,9 @@
 
 Todas as mudanças relevantes da extensão **Mangaba AI para VS Code**.
 
+## [0.11.11]
+- Publicação no Open VSX (registro aberto: VSCodium, Cursor, Windsurf, Gitpod); correção dos pacotes por plataforma.
+
 ## [0.11.10]
 - **10 melhorias de segurança**:
   1. **API key no armazenamento seguro do sistema** (SecretStorage) — comando *Definir API key (seguro)*; migração automática da configuração antiga em texto plano.
