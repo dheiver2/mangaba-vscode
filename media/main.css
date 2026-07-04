@@ -293,3 +293,27 @@ body {
 .tokens { font-variant-numeric: tabular-nums; }
 .tokens.warn { color: var(--vscode-editorWarning-foreground, #e2a336); font-weight: 600; }
 .foot-hint { opacity: .7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── Tabelas markdown ────────────────────────────────────────────────────── */
+.tbl-wrap { overflow-x: auto; margin: 8px 0; }
+.tbl-wrap table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+.tbl-wrap th, .tbl-wrap td {
+  border: 1px solid var(--vscode-editorWidget-border, rgba(128,128,128,.35));
+  padding: 5px 9px; text-align: left; vertical-align: top;
+}
+.tbl-wrap th {
+  background: color-mix(in srgb, var(--mangaba) 12%, transparent);
+  font-weight: 600;
+}
+.tbl-wrap tbody tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--vscode-editorWidget-border, #888) 8%, transparent);
+}
+
+/* ── Caminho de arquivo clicável ─────────────────────────────────────────── */
+.file-link {
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  color: var(--vscode-textLink-foreground, #3794ff);
+}
+.file-link:hover { text-decoration-style: solid; }

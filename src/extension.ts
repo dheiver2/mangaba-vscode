@@ -139,7 +139,7 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
     this.view = view
     view.webview.options = { enableScripts: true, localResourceRoots: [this.ctx.extensionUri] }
     view.webview.html = this.html(view.webview)
-    view.webview.onDidReceiveMessage(async (m: { type: string; history?: Msg[]; model?: string; code?: string; mode?: string; id?: string; title?: string; name?: string; data?: string; lang?: string }) => {
+    view.webview.onDidReceiveMessage(async (m: { type: string; history?: Msg[]; model?: string; code?: string; mode?: string; id?: string; title?: string; name?: string; data?: string; lang?: string; line?: number }) => {
       if (m.type === 'send' && m.history) await this.stream(m.history)
       else if (m.type === 'stop') this.abort?.abort()
       else if (m.type === 'getModels') await this.sendModels()
@@ -153,6 +153,7 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
       else if (m.type === 'openAttachment' && typeof m.data === 'string') await this.openDoc(m.data, m.lang || 'plaintext')
       else if (m.type === 'save' && m.id && m.history) this.saveConversation(m.id, m.title || 'Conversa', m.history)
       else if (m.type === 'openHistory') await this.openHistory()
+      else if (m.type === 'openFile' && m.name) await this.openWorkspaceFile(m.name, m.line)
     })
     this.updateContext()
   }
@@ -494,6 +495,28 @@ class MangabaViewProvider implements vscode.WebviewViewProvider {
   private async openDoc(content: string, language: string) {
     const doc = await vscode.workspace.openTextDocument({ content, language })
     await vscode.window.showTextDocument(doc, { preview: false })
+  }
+
+  /** Abre um caminho relativo citado no chat (ex: `src/app.ts:42`) no editor. */
+  private async openWorkspaceFile(rel: string, line?: number) {
+    const root = vscode.workspace.workspaceFolders?.[0]?.uri
+    if (!root) return
+    let uri = vscode.Uri.joinPath(root, rel)
+    try { await vscode.workspace.fs.stat(uri) } catch {
+      // Caminho pode ser parcial (só o nome ou subcaminho) — procura no workspace.
+      const base = rel.split('/').pop() || rel
+      const hits = await vscode.workspace.findFiles('**/' + base, '**/{node_modules,dist,out,build,.git}/**', 5)
+      const hit = hits.find((u) => u.path.endsWith('/' + rel)) ?? hits[0]
+      if (!hit) return
+      uri = hit
+    }
+    const doc = await vscode.workspace.openTextDocument(uri)
+    const ed = await vscode.window.showTextDocument(doc, { preview: true })
+    if (line && line > 0) {
+      const pos = new vscode.Position(Math.min(line - 1, doc.lineCount - 1), 0)
+      ed.selection = new vscode.Selection(pos, pos)
+      ed.revealRange(new vscode.Range(pos, pos), vscode.TextEditorRevealType.InCenter)
+    }
   }
   private reveal() {
     this.view?.show?.(true)

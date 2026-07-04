@@ -41,6 +41,12 @@
   })
 
   // Botões dos blocos de código (delegação): Aplicar / Inserir / Copiar.
+  // Caminho de arquivo citado na resposta → abre no editor.
+  $messages.addEventListener('click', (e) => {
+    const fl = e.target && e.target.closest ? e.target.closest('.file-link') : null
+    if (!fl) return
+    vscode.postMessage({ type: 'openFile', name: fl.dataset.file, line: fl.dataset.line ? parseInt(fl.dataset.line, 10) : undefined })
+  })
   $messages.addEventListener('click', (e) => {
     const btn = e.target && e.target.closest ? e.target.closest('.code-act') : null
     if (!btn) return
@@ -192,24 +198,56 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;')
   }
 
+  // Caminho de arquivo citado em `code` vira link clicável que abre no editor.
+  // Casa rel/caminho.ext e rel/caminho.ext:linha (extensões de código comuns).
+  const FILE_RE = /^([\w@][\w@.\/-]*\.(?:ts|tsx|js|jsx|mjs|cjs|py|java|go|rb|rs|c|cc|cpp|h|hpp|cs|php|kt|swift|scala|sh|sql|json|ya?ml|md|html|css|scss|less|vue|svelte|astro|toml|txt))(?::(\d+))?$/
+  function codeOrFileLink(body) {
+    const m = body.match(FILE_RE)
+    if (m && body.indexOf('/') >= 0) {
+      return '<code class="file-link" data-file="' + m[1] + '"' + (m[2] ? ' data-line="' + m[2] + '"' : '') +
+        ' title="Abrir no editor">' + body + '</code>'
+    }
+    return '<code>' + body + '</code>'
+  }
+
   // Formatação inline (tudo escapado antes) — negrito, itálico, code, links.
   function inline(s) {
     s = escapeHtml(s)
-    s = s.replace(/`([^`]+)`/g, '<code>$1</code>')
+    s = s.replace(/`([^`]+)`/g, (_, body) => codeOrFileLink(body))
     s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     s = s.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
     s = s.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2">$1</a>')
     return s
   }
 
-  // Blocos de texto: títulos, listas, citações, régua, parágrafos.
+  // Linha de tabela markdown (| a | b |) e linha separadora (|---|:--:|).
+  function isTableRow(line) { return /^\s*\|.*\|\s*$/.test(line) }
+  function isTableSep(line) { return /^\s*\|(\s*:?-{2,}:?\s*\|)+\s*$/.test(line) }
+  function splitCells(line) {
+    return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim())
+  }
+
+  // Blocos de texto: títulos, listas, citações, régua, tabelas, parágrafos.
   function renderText(seg) {
     const lines = seg.split('\n')
     let html = '', list = null, para = []
     const flushPara = () => { if (para.length) { html += '<p>' + para.map(inline).join('<br/>') + '</p>'; para = [] } }
     const closeList = () => { if (list) { html += '</' + list + '>'; list = null } }
-    for (const line of lines) {
+    for (let li = 0; li < lines.length; li++) {
+      const line = lines[li]
       let m
+      if (isTableRow(line) && li + 1 < lines.length && isTableSep(lines[li + 1])) {
+        flushPara(); closeList()
+        const head = splitCells(line)
+        let t = '<div class="tbl-wrap"><table><thead><tr>' + head.map((c) => '<th>' + inline(c) + '</th>').join('') + '</tr></thead><tbody>'
+        for (li += 2; li < lines.length && isTableRow(lines[li]) && !isTableSep(lines[li]); li++) {
+          const cells = splitCells(lines[li])
+          t += '<tr>' + head.map((_, ci) => '<td>' + inline(cells[ci] || '') + '</td>').join('') + '</tr>'
+        }
+        li--
+        html += t + '</tbody></table></div>'
+        continue
+      }
       if (/^\s*$/.test(line)) { flushPara(); closeList(); continue }
       if ((m = line.match(/^(#{1,4})\s+(.*)$/))) { flushPara(); closeList(); const l = m[1].length; html += '<h' + l + '>' + inline(m[2]) + '</h' + l + '>'; continue }
       if (/^\s*([-*_])\1{2,}\s*$/.test(line)) { flushPara(); closeList(); html += '<hr/>'; continue }
