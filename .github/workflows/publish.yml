@@ -13,6 +13,11 @@ jobs:
   #    (Sem darwin-x64: runners macos-13/Intel foram aposentados pela GitHub e
   #    ficam presos na fila; Macs Intel recebem a build universal.)
   platform:
+    # Ignora tags de release "auxiliares" (ex: v0.11.10-vsix, criadas só para
+    # anexar o .vsix numa GitHub Release) — 'v*' no push acima também casava
+    # com elas e disparava publish no Marketplace à toa, empilhando tentativas
+    # em cima do rate limit "Concurrency".
+    if: ${{ github.event_name != 'push' || !contains(github.ref_name, '-') }}
     strategy:
       fail-fast: false
       # A Marketplace limita publishes concorrentes do mesmo PAT (rate limit
@@ -71,7 +76,7 @@ jobs:
   #    needs: serializa com os publishes por plataforma (rate limit do PAT).
   universal:
     needs: platform
-    if: ${{ always() }}
+    if: ${{ always() && (github.event_name != 'push' || !contains(github.ref_name, '-')) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
