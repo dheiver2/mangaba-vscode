@@ -71,4 +71,6 @@ jobs:
         env:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
         shell: bash
-        run: npx --yes ovsx publish --skip-duplicate -p "$OVSX_PAT"
+        # --no-dependencies: a build leve remove deps de propósito; sem a flag
+        # o ovsx roda `npm ls` e falha com "extraneous/missing".
+        run: npx --yes ovsx publish --no-dependencies --skip-duplicate -p "$OVSX_PAT"
