@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mangaba AI — Copiloto de IA para VS Code</title>
+<meta name="description" content="O copiloto de IA brasileiro e soberano para VS Code: chat, agente autônomo, edição de código, RAG e MCP — funciona de fábrica ou 100% na sua infra.">
+<link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #F97518;
+    --primary-hover: #C25B11;
+    --primary-light: #FF9C24;
+    --text: #1E0D01;
+    --text-soft: #402B22;
+    --cream: #FFF8F5;
+    --cream-2: #FFF4ED;
+    --cream-3: #FFDAC2;
+    --accent: #FAE4BE;
+    --accent-2: #EDC580;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Open Sans', sans-serif;
+    color: var(--text-soft);
+    background: linear-gradient(180deg, var(--cream) 0%, var(--cream-2) 100%);
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px; }
+  header.hero {
+    padding: 72px 0 48px;
+    text-align: center;
+  }
+  .logo {
+    width: 140px;
+    height: auto;
+    margin-bottom: 28px;
+    filter: drop-shadow(0 12px 28px rgba(30, 13, 1, 0.18));
+  }
+  h1 {
+    font-size: 2.6rem;
+    font-weight: 800;
+    color: var(--text);
+    margin: 0 0 12px;
+    letter-spacing: -0.02em;
+  }
+  .tagline {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--primary-hover);
+    margin: 0 0 16px;
+  }
+  .desc {
+    font-size: 1.02rem;
+    line-height: 1.6;
+    max-width: 620px;
+    margin: 0 auto 36px;
+    color: var(--text-soft);
+    opacity: 0.9;
+  }
+  .cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    justify-content: center;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 26px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.98rem;
+    text-decoration: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    border: 2px solid transparent;
+  }
+  .btn:hover { transform: translateY(-2px); }
+  .btn-primary {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(249, 117, 24, 0.35);
+  }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-outline {
+    background: transparent;
+    border-color: var(--cream-3);
+    color: var(--text-soft);
+  }
+  .btn-outline:hover { border-color: var(--primary); color: var(--primary-hover); }
+
+  section.features {
+    padding: 48px 0 64px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid var(--cream-3);
+    border-radius: 16px;
+    padding: 22px;
+  }
+  .card .icon { font-size: 1.6rem; margin-bottom: 10px; display: block; }
+  .card h3 {
+    font-size: 1.02rem;
+    margin: 0 0 6px;
+    color: var(--text);
+  }
+  .card p {
+    font-size: 0.92rem;
+    line-height: 1.5;
+    margin: 0;
+    opacity: 0.85;
+  }
+
+  .install {
+    background: var(--accent);
+    border-radius: 18px;
+    padding: 32px;
+    margin: 8px 0 56px;
+    text-align: center;
+  }
+  .install h2 {
+    margin: 0 0 10px;
+    color: var(--text);
+    font-size: 1.3rem;
+  }
+  .install code {
+    display: inline-block;
+    background: var(--text);
+    color: var(--cream);
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    margin-top: 12px;
+  }
+
+  footer {
+    text-align: center;
+    padding: 32px 0 56px;
+    font-size: 0.88rem;
+    opacity: 0.7;
+  }
+  footer a { color: var(--primary-hover); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 480px) {
+    h1 { font-size: 2rem; }
+    header.hero { padding: 48px 0 32px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <img class="logo" src="assets/logo.svg" alt="Mangaba AI">
+    <h1>Mangaba AI</h1>
+    <p class="tagline">O copiloto de IA brasileiro e soberano para VS Code</p>
+    <p class="desc">
+      Chat, agente autônomo, edição de código, anexos (PDF/imagem) e RAG @codebase —
+      funciona de fábrica ou 100% na sua própria infraestrutura (compatível com OpenAI).
+    </p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="https://marketplace.visualstudio.com/items?itemName=mangaba-ai.mangaba-ai">
+        Instalar no VS Code
+      </a>
+      <a class="btn btn-outline" href="https://github.com/dheiver2/mangaba-vscode/releases/tag/v0.11.10-vsix">
+        Baixar .vsix
+      </a>
+      <a class="btn btn-outline" href="https://github.com/dheiver2/mangaba-vscode">
+        Código-fonte
+      </a>
+    </div>
+  </div>
+</header>
+
+<section class="features">
+  <div class="wrap">
+    <div class="grid">
+      <div class="card">
+        <span class="icon">💬</span>
+        <h3>Chat + streaming</h3>
+        <p>Painel de chat integrado com seleção de modelo, visão e histórico de conversas.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🤖</span>
+        <h3>Agente autônomo</h3>
+        <p>Planejamento, terminal, auto-verificação e checkpoints com rollback.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🔎</span>
+        <h3>RAG @codebase</h3>
+        <p>Embeddings locais (ou via Ollama) para responder com contexto do seu projeto.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🔌</span>
+        <h3>MCP</h3>
+        <p>Conecte servidores MCP externos como ferramentas do agente.</p>
+      </div>
+      <div class="card">
+        <span class="icon">📎</span>
+        <h3>Anexos</h3>
+        <p>Arraste PDF, imagem ou código — extração e análise automáticas.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🔒</span>
+        <h3>Soberano por padrão</h3>
+        <p>Funciona pronto de fábrica ou 100% na sua infra, sem depender de terceiros.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+  <div class="install">
+    <h2>Instalação manual (.vsix)</h2>
+    <p>Enquanto a publicação no Marketplace está em andamento, instale direto pela release:</p>
+    <code>code --install-extension mangaba-ai-0.11.10.vsix</code>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap">
+    MIT License · <a href="https://github.com/dheiver2/mangaba-vscode">dheiver2/mangaba-vscode</a> ·
+    <a href="https://mangaba.ia.br">mangaba.ia.br</a>
+  </div>
+</footer>
+
+</body>
+</html>
