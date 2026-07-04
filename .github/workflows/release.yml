@@ -6,13 +6,15 @@ on:
 
 jobs:
   package:
+    # Mesma guarda do publish.yml: ignora tags auxiliares (ex: v0.11.10-vsix).
+    if: ${{ github.event_name != 'push' || !contains(github.ref_name, '-') }}
     strategy:
       matrix:
         include:
           - os: macos-14        # arm64
             target: darwin-arm64
-          - os: macos-13        # x64
-            target: darwin-x64
+          # Sem darwin-x64: runners macos-13/Intel foram aposentados pela
+          # GitHub e o job fica preso na fila para sempre.
           - os: windows-latest
             target: win32-x64
           - os: ubuntu-latest
@@ -24,6 +26,22 @@ jobs:
         with: { node-version: 20 }
       - run: npm ci
       - run: npm run build
+      # Poda os binários nativos das outras plataformas (mesmo racional do
+      # publish.yml: onnxruntime-node traz as 6 combinações no mesmo pacote).
+      - name: Podar binários de outras plataformas (onnxruntime-node)
+        shell: bash
+        run: |
+          target="${{ matrix.target }}"
+          os_part="${target%-*}"
+          arch_part="${target##*-}"
+          dir="node_modules/onnxruntime-node/bin/napi-v3"
+          for os in linux darwin win32; do
+            for arch in x64 arm64; do
+              if [ "$os" != "$os_part" ] || [ "$arch" != "$arch_part" ]; then
+                rm -rf "$dir/$os/$arch"
+              fi
+            done
+          done
       # empacota já com o binário nativo do onnxruntime da plataforma do runner
       - run: npx --yes @vscode/vsce package --target ${{ matrix.target }}
       - uses: actions/upload-artifact@v4
