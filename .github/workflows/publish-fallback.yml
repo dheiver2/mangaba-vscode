@@ -63,7 +63,7 @@ jobs:
             fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
           "
       - name: Publish (${{ matrix.target }}, fallback)
-        if: ${{ env.VSCE_PAT_FALLBACK != '' && env.FALLBACK_PUBLISHER != '' }}
+        if: ${{ env.VSCE_PAT != '' && env.FALLBACK_PUBLISHER != '' }}
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT_FALLBACK }}
         shell: bash
@@ -99,7 +99,7 @@ jobs:
             fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
           "
       - name: Publish (universal, fallback)
-        if: ${{ env.VSCE_PAT_FALLBACK != '' && env.FALLBACK_PUBLISHER != '' }}
+        if: ${{ env.VSCE_PAT != '' && env.FALLBACK_PUBLISHER != '' }}
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT_FALLBACK }}
         shell: bash
