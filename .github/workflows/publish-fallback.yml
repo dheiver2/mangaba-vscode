@@ -1,0 +1,111 @@
+name: Publish to Marketplace (fallback publisher)
+
+# Rota alternativa enquanto o publisher "mangaba-ai" está bloqueado
+# (rate limit "Concurrency"/VSID persistente). Publica a MESMA extensão
+# sob um publisher paralelo (conta Microsoft/Azure DevOps diferente),
+# sem tocar no package.json principal — a substituição do campo
+# "publisher" acontece só nesta execução, via `jq` num arquivo temporário.
+#
+# Requer os secrets:
+#   FALLBACK_PUBLISHER  — nome do publisher paralelo (ex: mangaba-ai-br)
+#   VSCE_PAT_FALLBACK   — PAT desse publisher
+#
+# Disparo manual só: workflow_dispatch (nunca em push de tag — é rota de
+# emergência, não o fluxo padrão).
+on:
+  workflow_dispatch:
+
+jobs:
+  platform:
+    if: ${{ github.event_name != 'push' || !contains(github.ref_name, '-') }}
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - os: macos-14
+            target: darwin-arm64
+          - os: windows-latest
+            target: win32-x64
+          - os: ubuntu-latest
+            target: linux-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci
+      - run: npm run build
+      - name: Podar binários de outras plataformas (onnxruntime-node)
+        shell: bash
+        run: |
+          target="${{ matrix.target }}"
+          os_part="${target%-*}"
+          arch_part="${target##*-}"
+          dir="node_modules/onnxruntime-node/bin/napi-v3"
+          for os in linux darwin win32; do
+            for arch in x64 arm64; do
+              if [ "$os" != "$os_part" ] || [ "$arch" != "$arch_part" ]; then
+                rm -rf "$dir/$os/$arch"
+              fi
+            done
+          done
+      - name: Trocar publisher no package.json (só nesta execução)
+        if: ${{ env.FALLBACK_PUBLISHER != '' }}
+        env:
+          FALLBACK_PUBLISHER: ${{ secrets.FALLBACK_PUBLISHER }}
+        shell: bash
+        run: |
+          node -e "
+            const fs = require('fs');
+            const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            p.publisher = process.env.FALLBACK_PUBLISHER;
+            fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
+          "
+      - name: Publish (${{ matrix.target }}, fallback)
+        if: ${{ env.VSCE_PAT_FALLBACK != '' && env.FALLBACK_PUBLISHER != '' }}
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT_FALLBACK }}
+        shell: bash
+        run: |
+          for i in 1 2 3; do
+            npx --yes @vscode/vsce publish --target ${{ matrix.target }} --skip-duplicate && exit 0
+            echo "tentativa $i falhou; aguardando $((i*60))s…"; sleep $((i*60))
+          done
+          exit 1
+
+  universal:
+    needs: platform
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci
+      - run: npm run build
+      - name: Remover deps de RAG local (usa Ollama nesta build)
+        run: rm -rf node_modules/onnxruntime-node node_modules/@xenova
+      - name: Trocar publisher no package.json (só nesta execução)
+        if: ${{ env.FALLBACK_PUBLISHER != '' }}
+        env:
+          FALLBACK_PUBLISHER: ${{ secrets.FALLBACK_PUBLISHER }}
+        shell: bash
+        run: |
+          node -e "
+            const fs = require('fs');
+            const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            p.publisher = process.env.FALLBACK_PUBLISHER;
+            fs.writeFileSync('package.json', JSON.stringify(p, null, 2) + '\n');
+          "
+      - name: Publish (universal, fallback)
+        if: ${{ env.VSCE_PAT_FALLBACK != '' && env.FALLBACK_PUBLISHER != '' }}
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT_FALLBACK }}
+        shell: bash
+        run: |
+          for i in 1 2 3; do
+            npx --yes @vscode/vsce publish --no-dependencies --skip-duplicate && exit 0
+            echo "tentativa $i falhou; aguardando $((i*60))s…"; sleep $((i*60))
+          done
+          exit 1
