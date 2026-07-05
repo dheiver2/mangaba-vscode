@@ -9,6 +9,10 @@ tsconfig.json
 node_modules/.bin/**
 node_modules/**/{test,tests,example,examples,docs,doc,.github}/**
 node_modules/**/*.md
+# Notas de trabalho soltas na raiz do repo (não fazem parte da extensão).
+/*.md
+!/README.md
+!/CHANGELOG.md
 # Runtime de BROWSER do onnx — nunca carregado em Node (usamos onnxruntime-node).
 # Excluído do pacote: carrega a cadeia vulnerável protobufjs/onnx-proto (CVE).
 node_modules/onnxruntime-web/**
