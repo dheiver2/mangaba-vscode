@@ -2,6 +2,9 @@
 
 Todas as mudanças relevantes da extensão **Mangaba AI para VS Code**.
 
+## [0.11.14]
+- Open VSX: publica só o build universal leve (por-plataforma travava "inativo" no processamento deles).
+
 ## [0.11.13]
 - Republicação (a 0.11.12 ficou travada "inativa" no Open VSX por mais de 24h).
 
