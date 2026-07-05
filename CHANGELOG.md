@@ -2,6 +2,9 @@
 
 Todas as mudanças relevantes da extensão **Mangaba AI para VS Code**.
 
+## [0.11.13]
+- Republicação (a 0.11.12 ficou travada "inativa" no Open VSX por mais de 24h).
+
 ## [0.11.12]
 - **Tabelas markdown** renderizadas no chat (cabeçalho, zebra, rolagem horizontal).
 - **Caminhos de arquivo clicáveis** — `src/arquivo.ts:42` citado na resposta abre direto no editor, na linha.
