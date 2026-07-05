@@ -4,58 +4,22 @@ name: Publish to Open VSX
 # Gitpod etc. Estratégia adotada enquanto o publish no VS Code Marketplace
 # está bloqueado (rate limit "Concurrency"/VSID persistente na conta).
 # Requer o secret OVSX_PAT (token de acesso criado em open-vsx.org).
+#
+# Só o build UNIVERSAL (leve, ~650KB) é publicado aqui — os builds
+# por-plataforma (~85MB com binários nativos do onnxruntime) ficaram
+# repetidamente travados "publicado mas inativo" no processamento do
+# Open VSX (aconteceu com darwin-arm64 na v0.11.12 e win32-x64 depois).
+# RAG local fica indisponível neste canal (use mangaba.embeddingsBackend
+# = ollama); os builds self-contained continuam saindo normalmente na
+# GitHub Release (.vsix) e no VS Code Marketplace, quando este voltar.
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
 
 jobs:
-  platform:
-    # Ignora tags auxiliares (ex: v0.11.10-vsix) — mesmo racional do publish.yml.
-    if: ${{ github.event_name != 'push' || !contains(github.ref_name, '-') }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: macos-14
-            target: darwin-arm64
-          - os: windows-latest
-            target: win32-x64
-          - os: ubuntu-latest
-            target: linux-x64
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 20 }
-      - run: npm ci
-      - run: npm run build
-      # onnxruntime-node traz binários das 6 combinações SO/arch no mesmo
-      # pacote npm; poda o que não é da plataforma-alvo (mesmo do publish.yml).
-      - name: Podar binários de outras plataformas (onnxruntime-node)
-        shell: bash
-        run: |
-          target="${{ matrix.target }}"
-          os_part="${target%-*}"
-          arch_part="${target##*-}"
-          dir="node_modules/onnxruntime-node/bin/napi-v3"
-          for os in linux darwin win32; do
-            for arch in x64 arm64; do
-              if [ "$os" != "$os_part" ] || [ "$arch" != "$arch_part" ]; then
-                rm -rf "$dir/$os/$arch"
-              fi
-            done
-          done
-      - name: Publish (${{ matrix.target }})
-        if: ${{ env.OVSX_PAT != '' }}
-        env:
-          OVSX_PAT: ${{ secrets.OVSX_PAT }}
-        shell: bash
-        run: npx --yes ovsx publish --target ${{ matrix.target }} --skip-duplicate -p "$OVSX_PAT"
-
   universal:
-    needs: platform
-    if: ${{ always() && (github.event_name != 'push' || !contains(github.ref_name, '-')) }}
+    if: ${{ github.event_name != 'push' || !contains(github.ref_name, '-') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -63,7 +27,6 @@ jobs:
         with: { node-version: 20 }
       - run: npm ci
       - run: npm run build
-      # Build leve: RAG local fica de fora (use mangaba.embeddingsBackend=ollama).
       - name: Remover deps de RAG local (usa Ollama nesta build)
         run: rm -rf node_modules/onnxruntime-node node_modules/@xenova
       - name: Publish (universal, leve)
