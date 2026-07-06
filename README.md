@@ -12,6 +12,8 @@
 **O copiloto de IA brasileiro e soberano — dentro do seu VS Code.**
 Chat, edição de código, agente autônomo e busca no repositório usando os modelos **self-hosted** da Mangaba (OpenAI-compatível). Seu código **não sai da sua infraestrutura**.
 
+<img src="media/demo.gif" alt="Chat da Mangaba AI respondendo com tabela markdown e bloco de código com Aplicar/Inserir/Copiar" width="380" />
+
 ---
 
 ## Por que Mangaba
