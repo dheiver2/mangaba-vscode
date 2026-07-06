@@ -1,5 +1,7 @@
 # Mangaba AI para VS Code
 
+[![Open VSX Version](https://img.shields.io/open-vsx/v/mangaba-ai/mangaba-ai?label=open%20vsx&color=C160EF)](https://open-vsx.org/extension/mangaba-ai/mangaba-ai)
+[![Open VSX Downloads](https://img.shields.io/open-vsx/dt/mangaba-ai/mangaba-ai?color=C160EF)](https://open-vsx.org/extension/mangaba-ai/mangaba-ai)
 [![Version](https://img.shields.io/visual-studio-marketplace/v/mangaba-ai.mangaba-ai?label=marketplace&color=E94A12)](https://marketplace.visualstudio.com/items?itemName=mangaba-ai.mangaba-ai)
 [![Installs](https://img.shields.io/visual-studio-marketplace/i/mangaba-ai.mangaba-ai?color=3DA639)](https://marketplace.visualstudio.com/items?itemName=mangaba-ai.mangaba-ai)
 [![VS Code](https://img.shields.io/badge/VS%20Code-1.85%2B-007ACC?logo=visualstudiocode&logoColor=white)](https://code.visualstudio.com/)
