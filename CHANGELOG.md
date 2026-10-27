@@ -2,6 +2,11 @@
 
 Todas as mudanças relevantes da extensão **Mangaba AI para VS Code**.
 
+## [0.12.0]
+- **Mangaba Router como servidor padrão** (`https://mangabarouter.store/v1`): o seletor do chat lista os modelos do router.
+- **`mangaba-titan` como modelo inicial**; a lista de modelos nas configurações traz `mangaba-auto`, `mangaba-titan`, `mangaba-coder`, `mangaba-agente`, `mangaba-agente-rapido`, `mangaba-agente-hibrido`, `mangaba-bolt` e `mangaba-vl`.
+- Use sua chave do router com o comando *Mangaba AI: Definir API key (seguro)*.
+
 ## [0.11.14]
 - Open VSX: publica só o build universal leve (por-plataforma travava "inativo" no processamento deles).
 
