@@ -221,24 +221,32 @@
       "properties": {
         "mangaba.baseUrl": {
           "type": "string",
-          "default": "https://walton-undepreciatory-tracee.ngrok-free.dev/v1",
-          "markdownDescription": "Endpoint **OpenAI-compatível** do servidor Mangaba (raiz terminando em `/v1`). Já vem apontando para o servidor Mangaba; troque pelo **seu** se preferir.",
+          "default": "https://mangabarouter.store/v1",
+          "markdownDescription": "Endpoint **OpenAI-compatível** do Mangaba Router (raiz terminando em `/v1`). Já vem apontando para o router; troque pelo **seu** se preferir.",
           "order": 1
         },
         "mangaba.model": {
           "type": "string",
-          "default": "mangaba-pro",
+          "default": "mangaba-titan",
           "enum": [
-            "mangaba-pro",
-            "mangaba-max",
-            "mangaba-lite-q4",
-            "mangaba-vision-q8"
+            "mangaba-auto",
+            "mangaba-titan",
+            "mangaba-coder",
+            "mangaba-agente",
+            "mangaba-agente-rapido",
+            "mangaba-agente-hibrido",
+            "mangaba-bolt",
+            "mangaba-vl"
           ],
           "enumDescriptions": [
-            "8B — equilíbrio entre qualidade e velocidade",
-            "9B — foco em raciocínio",
-            "Q4 — rápido e leve",
-            "Multimodal (texto + visão)"
+            "Roteador — escolhe o modelo por pedido",
+            "Mais capaz: agentes, código e visão (GPU)",
+            "Especialista em código e agentes",
+            "Agente de uso geral, com ferramentas",
+            "Agente rápido para atendimento",
+            "Agente com contexto longo",
+            "Raciocínio leve e preciso",
+            "Multimodal (texto + imagem)"
           ],
           "markdownDescription": "Modelo inicial. O **seletor no topo do chat** lista os modelos do servidor e sobrepõe esta opção.",
           "order": 2
@@ -406,7 +414,7 @@
           {
             "id": "model",
             "title": "Escolha o modelo",
-            "description": "No topo do painel, o seletor lista os modelos do servidor (`mangaba-pro`, `max`, `lite`, `vision`). O ícone **Mangaba na barra de status** mostra se o servidor está online.",
+            "description": "No topo do painel, o seletor lista os modelos do Mangaba Router (`mangaba-titan`, `mangaba-coder`, `mangaba-bolt`, `mangaba-vl` e outros). O ícone **Mangaba na barra de status** mostra se o servidor está online.",
             "media": {
               "image": "media/icon-128.png",
               "altText": "Seletor de modelo"

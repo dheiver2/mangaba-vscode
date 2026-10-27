@@ -29,16 +29,16 @@ const FILE_CHARS = 20000
 // Tamanho máximo de anexo lido (12 MB).
 const MAX_ATTACH_BYTES = 12 * 1024 * 1024
 
-// Servidor Mangaba público — usado por padrão para TODOS os usuários.
+// Mangaba Router público — usado por padrão para TODOS os usuários.
 // Fallback no código (não só no default do manifesto): garante funcionamento
 // mesmo com settings antigas/vazias herdadas de versões anteriores.
-const DEFAULT_BASE_URL = 'https://walton-undepreciatory-tracee.ngrok-free.dev/v1'
+const DEFAULT_BASE_URL = 'https://mangabarouter.store/v1'
 
 function cfg() {
   const c = vscode.workspace.getConfiguration('mangaba')
   return {
     baseUrl:          ((c.get<string>('baseUrl') || '').trim() || DEFAULT_BASE_URL).replace(/\/+$/, ''),
-    model:            c.get<string>('model') || 'mangaba-pro',
+    model:            c.get<string>('model') || 'mangaba-titan',
     apiKey:           c.get<string>('apiKey') || '',
     temperature:      c.get<number>('temperature') ?? 0.7,
     maxTokens:        c.get<number>('maxTokens') ?? 4096,
@@ -115,7 +115,6 @@ function authHeaders(c: ReturnType<typeof cfg>) {
   const key = secretApiKey || c.apiKey
   return {
     'Content-Type': 'application/json',
-    'ngrok-skip-browser-warning': '1',
     ...(key ? { Authorization: `Bearer ${key}` } : {}),
   }
 }

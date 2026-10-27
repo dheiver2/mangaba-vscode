@@ -69,7 +69,7 @@ A análise é feita **no host** conforme o tipo:
 | --- | --- |
 | Código / texto / JSON / CSV / logs | Conteúdo lido e enviado ao modelo (com nome do arquivo e linguagem). |
 | **PDF** | Texto **extraído automaticamente** (resolve fontes/encodings via pdfjs; parser próprio como reserva). |
-| **Imagem** | Enviada ao modelo de **visão** (use `mangaba-vision-q8`). |
+| **Imagem** | Enviada ao modelo de **visão** (use `mangaba-vl` ou `mangaba-titan`). |
 | Binário | Anexado como referência (metadados), sinalizado como não analisável. |
 
 Arquivos de texto grandes são truncados para caber na janela de contexto (com aviso no chip). Tudo roda localmente/no seu servidor — **nada vai para terceiros**.
@@ -136,7 +136,7 @@ Conecte servidores **Model Context Protocol** e o agente usa as ferramentas dele
 | Configuração | Padrão | Descrição |
 | --- | --- | --- |
 | `mangaba.baseUrl` | servidor Mangaba | Endpoint OpenAI-compatível. Já vem apontando para o servidor Mangaba; troque pelo **seu** para soberania total. |
-| `mangaba.model` | `mangaba-pro` | Modelo inicial (o seletor do chat sobrepõe). |
+| `mangaba.model` | `mangaba-titan` | Modelo inicial (o seletor do chat sobrepõe). |
 | `mangaba.apiKey` | — | Bearer token (opcional). |
 | `mangaba.temperature` / `mangaba.maxTokens` | `0.7` / `4096` | Amostragem e limite de resposta. |
 | `mangaba.includeActiveFile` / `mangaba.maxContextChars` | `true` / `6000` | Contexto do arquivo ativo. |
