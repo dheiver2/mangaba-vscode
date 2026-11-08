@@ -221,7 +221,7 @@
       "properties": {
         "mangaba.baseUrl": {
           "type": "string",
-          "default": "https://mangabarouter.store/v1",
+          "default": "https://router.mangaba.ia.br/v1",
           "markdownDescription": "Endpoint **OpenAI-compatível** do Mangaba Router (raiz terminando em `/v1`). Já vem apontando para o router; troque pelo **seu** se preferir.",
           "order": 1
         },

@@ -32,7 +32,7 @@ const MAX_ATTACH_BYTES = 12 * 1024 * 1024
 // Mangaba Router público — usado por padrão para TODOS os usuários.
 // Fallback no código (não só no default do manifesto): garante funcionamento
 // mesmo com settings antigas/vazias herdadas de versões anteriores.
-const DEFAULT_BASE_URL = 'https://mangabarouter.store/v1'
+const DEFAULT_BASE_URL = 'https://router.mangaba.ia.br/v1'
 
 function cfg() {
   const c = vscode.workspace.getConfiguration('mangaba')
