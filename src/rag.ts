@@ -13,8 +13,8 @@ async function getExtractor() {
         mod = await import('@xenova/transformers')
       } catch {
         throw new Error(
-          'RAG local (transformers.js) não está incluído nesta build. ' +
-          'Use a build self-contained, ou configure "mangaba.embeddingsBackend": "ollama" (ollama pull nomic-embed-text).',
+          'Local RAG (transformers.js) is not included in this build. ' +
+          'Use the self-contained build, or set "mangaba.embeddingsBackend": "ollama" (ollama pull nomic-embed-text).',
         )
       }
       ;(mod.env as { allowLocalModels?: boolean }).allowLocalModels = false

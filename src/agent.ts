@@ -31,14 +31,14 @@ function parseAction(text: string): Action | null {
 }
 
 const SYSTEM =
-  'Você é um agente de código autônomo dentro do VS Code, trabalhando na pasta do projeto do usuário.\n' +
-  'A cada turno, responda com EXATAMENTE UMA ação, num único bloco JSON, sem texto fora dele. Ferramentas:\n' +
-  '- {"tool":"list"} — lista os arquivos do projeto.\n' +
-  '- {"tool":"read","path":"rel/arquivo"} — lê um arquivo.\n' +
-  '- {"tool":"write","path":"rel/arquivo","content":"CONTEÚDO COMPLETO"} — cria/sobrescreve um arquivo (o usuário revisa em diff).\n' +
-  '- {"tool":"run","command":"npm test"} — roda um comando no terminal e recebe a saída (o usuário aprova).\n' +
-  '- {"tool":"done","summary":"o que foi feito"} — encerra quando a tarefa estiver concluída e verificada.\n' +
-  'Regras: dê passos pequenos; leia antes de editar; DEPOIS de editar, RODE os testes/build para verificar; se falhar, corrija e rode de novo; ao final use "done". Seja conciso.'
+  'You are an autonomous code agent inside VS Code, working in the user's project folder.\n' +
+  'On each turn, reply with EXACTLY ONE action, in a single JSON block, with no text outside it. Tools:\n' +
+  '- {"tool":"list"} — lists the project files.\n' +
+  '- {"tool":"read","path":"rel/arquivo"} — reads a file.\n' +
+  '- {"tool":"write","path":"rel/arquivo","content":"COMPLETE CONTENT"} — creates/overwrites a file (the user reviews it in a diff).\n' +
+  '- {"tool":"run","command":"npm test"} — runs a command in the terminal and receives the output (the user approves).\n' +
+  '- {"tool":"done","summary":"what was done"} — ends when the task is complete and verified.\n' +
+  'Rules: take small steps; read before editing; AFTER editing, RUN the tests/build to verify; if it fails, fix and run again; at the end use "done". Be concise. Write the summary in the user's language (default: English).'
 
 export class AgentRunner {
   private out: vscode.OutputChannel
@@ -57,23 +57,23 @@ export class AgentRunner {
 
   async run(task: string) {
     this.out.show(true)
-    this.out.appendLine(`▶ Tarefa: ${task}\n`)
+    this.out.appendLine(`▶ Task: ${task}\n`)
 
     // 1) Planejamento — o agente esboça um plano antes de agir.
     const plan = await this.chat([
-      { role: 'system', content: 'Você é um agente de código. Devolva um PLANO curto e numerado (3-6 passos) para a tarefa. Só a lista, sem código.' },
-      { role: 'user', content: `Tarefa: ${task}` },
+      { role: 'system', content: 'You are a code agent. Return a short numbered PLAN (3-6 steps) for the task. Just the list, no code.' },
+      { role: 'user', content: `Task: ${task}` },
     ])
-    if (plan) { this.out.appendLine('📋 Plano:\n' + plan.trim() + '\n') }
+    if (plan) { this.out.appendLine('📋 Plan:\n' + plan.trim() + '\n') }
 
-    const hint = this.testCommand ? `\nComando de teste sugerido: \`${this.testCommand}\`.` : ''
+    const hint = this.testCommand ? `\nSuggested test command: \`${this.testCommand}\`.` : ''
     const mcpNote = this.mcpTools.length
-      ? '\nFerramentas MCP disponíveis (use {"tool":"mcp","server":"S","name":"N","args":{...}}):\n' +
+      ? '\nAvailable MCP tools (use {"tool":"mcp","server":"S","name":"N","args":{...}}):\n' +
         this.mcpTools.map((t) => `- ${t.server}/${t.name}: ${t.description || ''}`).join('\n')
       : ''
     const messages: Array<{ role: string; content: string }> = [
       { role: 'system', content: SYSTEM + hint + mcpNote },
-      { role: 'user', content: `Tarefa: ${task}\n\nPlano:\n${(plan || '').trim()}\n\nSiga o plano, um passo por vez.` },
+      { role: 'user', content: `Task: ${task}\n\nPlan:\n${(plan || '').trim()}\n\nFollow the plan, one step at a time.` },
     ]
 
     for (let step = 1; step <= this.maxSteps; step++) {
@@ -82,15 +82,15 @@ export class AgentRunner {
       const action = parseAction(reply)
       if (!action) {
         messages.push({ role: 'assistant', content: reply })
-        messages.push({ role: 'user', content: 'Formato inválido. Responda com UM bloco JSON de ação (list/read/write/run/done).' })
+        messages.push({ role: 'user', content: 'Invalid format. Reply with ONE JSON action block (list/read/write/run/done).' })
         continue
       }
       messages.push({ role: 'assistant', content: JSON.stringify(action) })
       this.out.appendLine(`— passo ${step}: ${action.tool} ${action.path || action.command || ''}`)
 
       if (action.tool === 'done') {
-        this.out.appendLine(`\n✔ Concluído: ${action.summary || ''}`)
-        vscode.window.showInformationMessage(`Mangaba (agente): ${action.summary || 'tarefa concluída'}`)
+        this.out.appendLine(`\n✔ Done: ${action.summary || ''}`)
+        vscode.window.showInformationMessage(`Mangaba (agent): ${action.summary || 'task completed'}`)
         return
       }
 
@@ -99,7 +99,7 @@ export class AgentRunner {
       messages.push({ role: 'user', content: `RESULTADO (${action.tool}):\n${truncate(result)}` })
     }
     this.out.appendLine(`\n■ Limite de ${this.maxSteps} passos atingido.`)
-    vscode.window.showWarningMessage(`Mangaba (agente): parou em ${this.maxSteps} passos. Veja o canal "Mangaba Agente".`)
+    vscode.window.showWarningMessage(`Mangaba (agent): stopped after ${this.maxSteps} steps. See the "Mangaba Agent" channel.`)
   }
 
   /** Mantém system + as últimas mensagens para caber na janela do modelo. */
@@ -124,7 +124,7 @@ export class AgentRunner {
         const safe = safeRelPath(a.path)
         if (!safe) return `RECUSADO: caminho fora do workspace (${a.path})`
         const ok = await this.applyFile(safe, a.content)
-        return ok ? `escrito: ${safe}` : `usuário cancelou a escrita de ${safe}`
+        return ok ? `escrito: ${safe}` : `user cancelled the write of ${safe}`
       }
       if (a.tool === 'run' && a.command) {
         return await this.runCommand(a.command)
@@ -134,7 +134,7 @@ export class AgentRunner {
       }
       return `ferramenta desconhecida: ${a.tool}`
     } catch (e) {
-      return 'ERRO: ' + ((e as Error).message || String(e))
+      return 'ERROR: ' + ((e as Error).message || String(e))
     }
   }
 
@@ -142,14 +142,14 @@ export class AgentRunner {
     if (DANGEROUS.test(command)) return `RECUSADO (comando perigoso): ${command}`
     if (this.commandApproval !== 'never') {
       const pick = await vscode.window.showWarningMessage(
-        `Mangaba (agente) quer rodar:\n\n${command}`, { modal: true }, 'Rodar', 'Pular',
+        `Mangaba (agent) wants to run:\n\n${command}`, { modal: true }, 'Run', 'Skip',
       )
-      if (pick !== 'Rodar') return 'usuário não aprovou o comando'
+      if (pick !== 'Run') return 'user did not approve the command'
     }
     return new Promise<string>((resolve) => {
       exec(command, { cwd: this.root.fsPath, timeout: 120000, maxBuffer: 4 * 1024 * 1024 }, (err, stdout, stderr) => {
         const code = err && typeof (err as { code?: number }).code === 'number' ? (err as { code?: number }).code : 0
-        resolve(`exit=${code}\n${truncate((stdout || '') + (stderr ? '\n[stderr]\n' + stderr : ''), 3000) || '(sem saída)'}`)
+        resolve(`exit=${code}\n${truncate((stdout || '') + (stderr ? '\n[stderr]\n' + stderr : ''), 3000) || '(no output)'}`)
       })
     })
   }

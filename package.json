@@ -1,7 +1,7 @@
 {
   "name": "mangaba-ai",
   "displayName": "Mangaba AI",
-  "description": "O copiloto de IA brasileiro e soberano: chat, agente autônomo, edição de código, anexos (PDF/imagem) e RAG — funciona de fábrica ou 100% na sua infra (OpenAI-compatível).",
+  "description": "The sovereign Brazilian AI copilot: chat, autonomous agent, code editing, attachments (PDF/image) and RAG — works out of the box or 100% on your own infrastructure (OpenAI-compatible).",
   "version": "0.12.0",
   "publisher": "mangaba-ai",
   "icon": "media/icon-128.png",
@@ -71,90 +71,90 @@
     "commands": [
       {
         "command": "mangaba.openChat",
-        "title": "Abrir chat",
+        "title": "Open Chat",
         "category": "Mangaba AI"
       },
       {
         "command": "mangaba.newChat",
-        "title": "Nova conversa",
+        "title": "New Conversation",
         "category": "Mangaba AI",
         "icon": "$(add)"
       },
       {
         "command": "mangaba.exportChat",
-        "title": "Exportar conversa (Markdown)",
+        "title": "Export Conversation (Markdown)",
         "category": "Mangaba AI",
         "icon": "$(export)"
       },
       {
         "command": "mangaba.setApiKey",
-        "title": "Definir API key (seguro)",
+        "title": "Set API Key (secure)",
         "category": "Mangaba AI",
         "icon": "$(key)"
       },
       {
         "command": "mangaba.explainSelection",
-        "title": "Explicar seleção",
+        "title": "Explain Selection",
         "category": "Mangaba AI",
         "icon": "$(sparkle)"
       },
       {
         "command": "mangaba.editSelection",
-        "title": "Editar seleção (IA)",
+        "title": "Edit Selection (AI)",
         "category": "Mangaba AI",
         "icon": "$(wand)"
       },
       {
         "command": "mangaba.agentTask",
-        "title": "Tarefa no projeto (agente)",
+        "title": "Project Task (agent)",
         "category": "Mangaba AI",
         "icon": "$(rocket)"
       },
       {
         "command": "mangaba.generateTests",
-        "title": "Gerar testes",
+        "title": "Generate Tests",
         "category": "Mangaba AI",
         "icon": "$(beaker)"
       },
       {
         "command": "mangaba.fixDiagnostics",
-        "title": "Corrigir erros com IA",
+        "title": "Fix Errors with AI",
         "category": "Mangaba AI",
         "icon": "$(lightbulb-autofix)"
       },
       {
         "command": "mangaba.commitMessage",
-        "title": "Gerar mensagem de commit",
+        "title": "Generate Commit Message",
         "category": "Mangaba AI",
         "icon": "$(sparkle)"
       },
       {
         "command": "mangaba.pickContext",
-        "title": "Adicionar contexto (@)",
+        "title": "Add Context (@)",
         "category": "Mangaba AI",
         "icon": "$(mention)"
       },
       {
         "command": "mangaba.openHistory",
-        "title": "Conversas salvas",
+        "title": "Saved Conversations",
         "category": "Mangaba AI",
         "icon": "$(history)"
       },
       {
         "command": "mangaba.indexProject",
-        "title": "Indexar projeto (RAG @codebase)",
+        "title": "Index Project (RAG @codebase)",
         "category": "Mangaba AI",
         "icon": "$(database)"
       },
       {
         "command": "mangaba.agentLoop",
-        "title": "Agente autônomo (tarefa)",
+        "title": "Autonomous Agent (task)",
         "category": "Mangaba AI",
         "icon": "$(run-all)"
       },
       {
         "command": "mangaba.undoAgent",
-        "title": "Desfazer sessão do agente",
+        "title": "Undo Agent Session",
         "category": "Mangaba AI",
         "icon": "$(discard)"
       }
@@ -222,7 +222,7 @@
         "mangaba.baseUrl": {
           "type": "string",
           "default": "https://router.mangaba.ia.br/v1",
-          "markdownDescription": "Endpoint **OpenAI-compatível** do Mangaba Router (raiz terminando em `/v1`). Já vem apontando para o router; troque pelo **seu** se preferir.",
+          "markdownDescription": "**OpenAI-compatible** endpoint of the Mangaba Router (root ending in `/v1`). It already points to the router; replace it with **your own** if you prefer.",
           "order": 1
         },
         "mangaba.model": {
@@ -239,29 +239,29 @@
             "mangaba-vl"
           ],
           "enumDescriptions": [
-            "Roteador — escolhe o modelo por pedido",
-            "Mais capaz: agentes, código e visão (GPU)",
-            "Especialista em código e agentes",
-            "Agente de uso geral, com ferramentas",
-            "Agente rápido para atendimento",
-            "Agente com contexto longo",
-            "Raciocínio leve e preciso",
-            "Multimodal (texto + imagem)"
+            "Router — picks the model per request",
+            "Most capable: agents, code and vision (GPU)",
+            "Code and agent specialist",
+            "General-purpose agent with tools",
+            "Fast agent for customer support",
+            "Long-context agent",
+            "Light, precise reasoning",
+            "Multimodal (text + image)"
           ],
-          "markdownDescription": "Modelo inicial. O **seletor no topo do chat** lista os modelos do servidor e sobrepõe esta opção.",
+          "markdownDescription": "Initial model. The **selector at the top of the chat** lists the server's models and overrides this option.",
           "order": 2
         },
         "mangaba.apiKey": {
           "type": "string",
           "default": "",
           "scope": "application",
-          "markdownDescription": "**Obsoleto** — use o comando *Mangaba AI: Definir API key (seguro)*, que guarda a chave criptografada no sistema. Este campo existe só para migração.",
+          "markdownDescription": "**Deprecated** — use the command *Mangaba AI: Set API Key (secure)*, which stores the key encrypted in the system. This field exists only for migration.",
           "order": 3
         },
         "mangaba.redactSecrets": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "**Redige segredos** (chaves de API, tokens, senhas, chaves privadas) do contexto e dos anexos antes de enviar ao modelo.",
+          "markdownDescription": "**Redacts secrets** (API keys, tokens, passwords, private keys) from the context and attachments before sending to the model.",
           "order": 12
         },
         "mangaba.temperature": {
@@ -269,45 +269,45 @@
           "default": 0.7,
           "minimum": 0,
           "maximum": 2,
-          "markdownDescription": "Temperatura de amostragem (0 = determinístico, 2 = criativo).",
+          "markdownDescription": "Sampling temperature (0 = deterministic, 2 = creative).",
           "order": 4
         },
         "mangaba.maxTokens": {
           "type": "number",
           "default": 4096,
           "minimum": 1,
-          "markdownDescription": "Máximo de tokens na resposta.",
+          "markdownDescription": "Maximum tokens in the response.",
           "order": 5
         },
         "mangaba.includeActiveFile": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Envia o **arquivo/seleção ativos** como contexto para o chat, para o modelo entender o código que você está escrevendo.",
+          "markdownDescription": "Sends the **active file/selection** as context to the chat, so the model understands the code you are writing.",
           "order": 6
         },
         "mangaba.maxContextChars": {
           "type": "number",
           "default": 6000,
           "minimum": 500,
-          "markdownDescription": "Máximo de caracteres do arquivo enviados como contexto (evita estourar a janela do modelo).",
+          "markdownDescription": "Maximum characters of the file sent as context (avoids overflowing the model's window).",
           "order": 7
         },
         "mangaba.reviewBeforeApply": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Mostra um **diff (atual × proposto)** e pede confirmação antes de aplicar o código no editor. Desligue para aplicar direto.",
+          "markdownDescription": "Shows a **diff (current × proposed)** and asks for confirmation before applying code in the editor. Turn off to apply directly.",
           "order": 8
         },
         "mangaba.inlineCompletions": {
           "type": "boolean",
           "default": false,
-          "markdownDescription": "**Autocompletar inline (ghost text)** enquanto você digita. *Opt-in:* os modelos Mangaba de 8K não são de baixa latência, então a sugestão pode demorar — melhor com um endpoint rápido. Aciona manualmente com `Alt+\\`.",
+          "markdownDescription": "**Inline autocomplete (ghost text)** as you type. *Opt-in:* Mangaba's 8K models are not low-latency, so the suggestion may be slow — better with a fast endpoint. Trigger manually with `Alt+\\`.",
           "order": 9
         },
         "mangaba.useCodebaseContext": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Usa o **índice local do projeto** (RAG @codebase) para recuperar trechos relevantes e injetá-los no chat. Rode **Mangaba AI: Indexar projeto** primeiro. Embeddings 100% locais (transformers.js), nada sai da máquina.",
+          "markdownDescription": "Uses the **local project index** (RAG @codebase) to retrieve relevant snippets and inject them into the chat. Run **Mangaba AI: Index Project** first. 100% local embeddings (transformers.js), nothing leaves the machine.",
           "order": 10
         },
         "mangaba.embeddingsBackend": {
@@ -318,22 +318,22 @@
           ],
           "default": "transformers",
           "enumDescriptions": [
-            "Local, embutido (transformers.js) — self-contained, mas o vsix fica grande/por-plataforma",
-            "Ollama local (HTTP) — vsix leve/portátil; exige Ollama + `ollama pull nomic-embed-text`"
+            "Local, bundled (transformers.js) — self-contained, but the vsix gets large/per-platform",
+            "Local Ollama (HTTP) — light/portable vsix; requires Ollama + `ollama pull nomic-embed-text`"
           ],
-          "markdownDescription": "Backend de **embeddings** do RAG @codebase.",
+          "markdownDescription": "**Embeddings** backend for RAG @codebase.",
           "order": 11
         },
         "mangaba.ollamaEmbedUrl": {
           "type": "string",
           "default": "http://localhost:11434/api/embeddings",
-          "markdownDescription": "URL de embeddings do Ollama (quando `embeddingsBackend = ollama`).",
+          "markdownDescription": "Ollama embeddings URL (when `embeddingsBackend = ollama`).",
           "order": 12
         },
         "mangaba.ollamaEmbedModel": {
           "type": "string",
           "default": "nomic-embed-text",
-          "markdownDescription": "Modelo de embedding do Ollama.",
+          "markdownDescription": "Ollama embedding model.",
           "order": 13
         },
         "mangaba.commandApproval": {
@@ -345,17 +345,17 @@
           "default": "always",
           "scope": "application",
           "enumDescriptions": [
-            "Pede aprovação a cada comando (recomendado)",
-            "Roda comandos sem perguntar (cuidado)"
+            "Asks for approval on every command (recommended)",
+            "Runs commands without asking (careful)"
           ],
-          "markdownDescription": "Aprovação de comandos de terminal do **agente autônomo**. (Só nas configurações de usuário — repositórios não podem alterar.)",
+          "markdownDescription": "Approval of terminal commands from the **autonomous agent**. (User settings only — repositories cannot change it.)",
           "order": 14
         },
         "mangaba.testCommand": {
           "type": "string",
           "default": "",
           "scope": "application",
-          "markdownDescription": "Comando de teste sugerido ao agente (ex.: `npm test`, `pytest`). (Só nas configurações de usuário — repositórios não podem alterar.)",
+          "markdownDescription": "Test command suggested to the agent (e.g. `npm test`, `pytest`). (User settings only — repositories cannot change it.)",
           "order": 15
         },
         "mangaba.agentMaxSteps": {
@@ -363,14 +363,14 @@
           "default": 12,
           "minimum": 1,
           "maximum": 40,
-          "markdownDescription": "Máximo de passos do laço agêntico.",
+          "markdownDescription": "Maximum steps of the agent loop.",
           "order": 16
         },
         "mangaba.mcpServers": {
           "type": "array",
           "default": [],
           "scope": "application",
-          "markdownDescription": "Servidores **MCP** (stdio) disponíveis para o agente. Ex.: `[{ \"name\": \"fs\", \"command\": \"npx\", \"args\": [\"-y\",\"@modelcontextprotocol/server-filesystem\",\".\"] }]`. (Só nas configurações de usuário — repositórios não podem alterar.)",
+          "markdownDescription": "**MCP** servers (stdio) available to the agent. E.g.: `[{ \"name\": \"fs\", \"command\": \"npx\", \"args\": [\"-y\",\"@modelcontextprotocol/server-filesystem\",\".\"] }]`. (User settings only — repositories cannot change it.)",
           "items": {
             "type": "object",
             "properties": {
@@ -399,13 +399,13 @@
     "walkthroughs": [
       {
         "id": "mangaba.getStarted",
-        "title": "Comece com a Mangaba AI",
-        "description": "Configure e use a IA brasileira e soberana Mangaba dentro do VS Code.",
+        "title": "Get started with Mangaba AI",
+        "description": "Set up and use the sovereign Brazilian AI Mangaba inside VS Code.",
         "steps": [
           {
             "id": "open",
-            "title": "Abra o chat — já funciona",
-            "description": "Clique no ícone **Mangaba AI** na Activity Bar (ou `Ctrl/Cmd+Alt+M`) e converse. A extensão **já vem conectada** ao servidor Mangaba — nenhuma configuração é necessária.\n\n[Abrir chat](command:mangaba.openChat)",
+            "title": "Open the chat — it already works",
+            "description": "Click the **Mangaba AI** icon in the Activity Bar (or `Ctrl/Cmd+Alt+M`) and start chatting. The extension **comes already connected** to the Mangaba server — no setup needed.\n\n[Open chat](command:mangaba.openChat)",
             "media": {
               "image": "media/icon-128.png",
               "altText": "Mangaba AI"
@@ -413,38 +413,38 @@
           },
           {
             "id": "model",
-            "title": "Escolha o modelo",
-            "description": "No topo do painel, o seletor lista os modelos do Mangaba Router (`mangaba-titan`, `mangaba-coder`, `mangaba-bolt`, `mangaba-vl` e outros). O ícone **Mangaba na barra de status** mostra se o servidor está online.",
+            "title": "Choose the model",
+            "description": "At the top of the panel, the selector lists the Mangaba Router models (`mangaba-titan`, `mangaba-coder`, `mangaba-bolt`, `mangaba-vl` and others). The **Mangaba icon in the status bar** shows whether the server is online.",
             "media": {
               "image": "media/icon-128.png",
-              "altText": "Seletor de modelo"
+              "altText": "Model selector"
             }
           },
           {
             "id": "attach",
-            "title": "Anexe arquivos e imagens",
-            "description": "**Arraste e solte** arquivos no chat, **cole** (`Ctrl/Cmd+V`) ou use o **clipe** — código, texto, **PDF** (texto extraído automaticamente) e **imagens** (visão). Clique no chip para pré-visualizar.",
+            "title": "Attach files and images",
+            "description": "**Drag and drop** files into the chat, **paste** (`Ctrl/Cmd+V`) or use the **paperclip** — code, text, **PDF** (text extracted automatically) and **images** (vision). Click the chip to preview.",
             "media": {
               "image": "media/icon-128.png",
-              "altText": "Anexar arquivos"
+              "altText": "Attach files"
             }
           },
           {
             "id": "slash",
-            "title": "Comandos rápidos com /",
-            "description": "Digite **`/`** no campo de mensagem: `/explain`, `/tests`, `/doc`, `/refactor`, `/fix`, `/export`, `/clear`. Também dá para **regenerar**, **editar** (`↑`) e **copiar** qualquer mensagem.",
+            "title": "Quick commands with /",
+            "description": "Type **`/`** in the message box: `/explain`, `/tests`, `/doc`, `/refactor`, `/fix`, `/export`, `/clear`. You can also **regenerate**, **edit** (`↑`) and **copy** any message.",
             "media": {
               "image": "media/icon-128.png",
-              "altText": "Comandos de barra"
+              "altText": "Slash commands"
             }
           },
           {
             "id": "explain",
-            "title": "Explique e edite código",
-            "description": "Selecione um trecho no editor e use **Explicar seleção** (`Cmd/Ctrl+Alt+E`) ou **Editar seleção (IA)** (`Cmd/Ctrl+Alt+K`). Blocos de código têm **Aplicar / Inserir / Copiar** com diff de revisão.",
+            "title": "Explain and edit code",
+            "description": "Select a snippet in the editor and use **Explain Selection** (`Cmd/Ctrl+Alt+E`) or **Edit Selection (AI)** (`Cmd/Ctrl+Alt+K`). Code blocks have **Apply / Insert / Copy** with a review diff.",
             "media": {
               "image": "media/icon-128.png",
-              "altText": "Explicar seleção"
+              "altText": "Explain Selection"
             },
             "completionEvents": [
               "onCommand:mangaba.explainSelection"
@@ -452,20 +452,20 @@
           },
           {
             "id": "agent",
-            "title": "Agente autônomo e RAG",
-            "description": "Rode **Agente autônomo (tarefa)** para planejar/editar/verificar em laço (com aprovação e rollback), e **Indexar projeto** para o chat recuperar trechos do seu código automaticamente.",
+            "title": "Autonomous agent and RAG",
+            "description": "Run **Autonomous Agent (task)** to plan/edit/verify in a loop (with approval and rollback), and **Index Project** so the chat retrieves snippets of your code automatically.",
             "media": {
               "image": "media/icon-128.png",
-              "altText": "Agente autônomo"
+              "altText": "Autonomous agent"
             }
           },
           {
             "id": "config",
-            "title": "(Opcional) Use o seu servidor",
-            "description": "Para soberania total, aponte `mangaba.baseUrl` para o seu endpoint OpenAI-compatível — seu código nunca sai da sua infraestrutura.\n\n[Abrir configurações](command:workbench.action.openSettings?%22mangaba%22)",
+            "title": "(Optional) Use your own server",
+            "description": "For full sovereignty, point `mangaba.baseUrl` to your OpenAI-compatible endpoint — your code never leaves your infrastructure.\n\n[Open settings](command:workbench.action.openSettings?%22mangaba%22)",
             "media": {
               "image": "media/icon-128.png",
-              "altText": "Configurações"
+              "altText": "Settings"
             }
           }
         ]

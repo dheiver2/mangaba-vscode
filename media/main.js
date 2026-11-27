@@ -5,9 +5,9 @@
   const SYSTEM = {
     role: 'system',
     content:
-      'Você é a Mangaba AI, uma IA brasileira e soberana, rodando dentro do VS Code. ' +
-      'Ajude com código e tarefas de engenharia: respostas diretas, em português, com blocos de código quando útil. ' +
-      'Use markdown padrão (```linguagem para código).',
+      'You are Mangaba AI, a sovereign Brazilian AI running inside VS Code. ' +
+      'Help with code and engineering tasks: direct answers, with code blocks when useful. Reply in the user's language (default: English). ' +
+      'Use standard markdown (```language for code).',
   }
 
   const $messages = document.getElementById('messages')
@@ -33,7 +33,7 @@
       if (act === 'copy') {
         const b = mt.closest('.msg').querySelector('.bubble')
         if (b && navigator.clipboard) navigator.clipboard.writeText(b.innerText)
-        flash(mt, 'Copiado', 'Copiar')
+        flash(mt, 'Copied', 'Copy')
       } else if (act === 'regen' || act === 'retry') { regenerate() }
       else if (act === 'edit') { editLast() }
       return
@@ -56,10 +56,10 @@
     const act = btn.getAttribute('data-act')
     if (act === 'copy') {
       if (navigator.clipboard) navigator.clipboard.writeText(code)
-      flash(btn, 'Copiado', 'Copiar')
+      flash(btn, 'Copied', 'Copy')
     } else {
       vscode.postMessage({ type: 'apply', code: code, mode: act === 'insert' ? 'insert' : 'replaceSelection' })
-      flash(btn, act === 'insert' ? 'Inserido' : 'Aplicado', act === 'insert' ? 'Inserir' : 'Aplicar')
+      flash(btn, act === 'insert' ? 'Inserted' : 'Applied', act === 'insert' ? 'Insert' : 'Apply')
     }
   })
   function flash(btn, on, off) { btn.textContent = on; setTimeout(() => { btn.textContent = off }, 1400) }
@@ -83,17 +83,17 @@
 
   function firstUserTitle() {
     const u = history.find((m) => m.role === 'user')
-    if (!u) return 'Conversa'
-    const t = typeof u.content === 'string' ? u.content : (u.content.find((p) => p.type === 'text') || {}).text || 'Conversa'
-    return t.replace(/\s+/g, ' ').trim().slice(0, 60) || 'Conversa'
+    if (!u) return 'Conversation'
+    const t = typeof u.content === 'string' ? u.content : (u.content.find((p) => p.type === 'text') || {}).text || 'Conversation'
+    return t.replace(/\s+/g, ' ').trim().slice(0, 60) || 'Conversation'
   }
   function persist() {
     vscode.postMessage({ type: 'save', id: convId, title: firstUserTitle(), history: history })
   }
   function renderCtxbar() {
     let html = ''
-    if (lastCtxChip) html += '<span class="ctx-chip" title="Enviado como contexto">◧ ' + escapeHtml(lastCtxChip.file) + (lastCtxChip.hasSel ? ' · seleção' : '') + '</span>'
-    for (const c of refChips) html += '<span class="ctx-chip ref" title="Contexto extra (@)">' + escapeHtml(c) + '</span>'
+    if (lastCtxChip) html += '<span class="ctx-chip" title="Sent as context">◧ ' + escapeHtml(lastCtxChip.file) + (lastCtxChip.hasSel ? ' · selection' : '') + '</span>'
+    for (const c of refChips) html += '<span class="ctx-chip ref" title="Extra context (@)">' + escapeHtml(c) + '</span>'
     $ctxbar.innerHTML = html
   }
   function renderHistory() {
@@ -103,7 +103,7 @@
       addMessage(m.role, m.content)
     }
     if (history.filter((m) => m.role !== 'system').length === 0) {
-      $messages.innerHTML = '<div class="empty"><img class="logo-img" src="' + (document.body.dataset.logo || '') + '" alt="Mangaba AI" /><p class="hint">Nova conversa.</p></div>'
+      $messages.innerHTML = '<div class="empty"><img class="logo-img" src="' + (document.body.dataset.logo || '') + '" alt="Mangaba AI" /><p class="hint">New conversation.</p></div>'
     }
     decorateLast()
   }
@@ -155,7 +155,7 @@
     const r = new FileReader()
     r.onload = () => {
       const b64 = String(r.result).split(',')[1] || ''
-      vscode.postMessage({ type: 'analyzeUpload', name: file.name || 'arquivo', data: b64 })
+      vscode.postMessage({ type: 'analyzeUpload', name: file.name || 'file', data: b64 })
     }
     r.readAsDataURL(file)
   }
@@ -177,11 +177,11 @@
       chip.innerHTML = attIcon(a) +
         '<span class="att-meta"><span class="att-name">' + escapeHtml(a.name) + '</span>' +
         (a.note ? '<span class="att-sub">' + escapeHtml(a.note) + '</span>' : '') + '</span>' +
-        '<button class="att-x" title="Remover" aria-label="Remover">×</button>'
+        '<button class="att-x" title="Remove" aria-label="Remove">×</button>'
       chip.querySelector('.att-x').addEventListener('click', () => { pendingAtts.splice(idx, 1); renderAttachment(); updateTokens() })
       if (a.kind === 'text' && a.text) {
         const meta = chip.querySelector('.att-meta')
-        meta.style.cursor = 'pointer'; meta.title = 'Pré-visualizar conteúdo'
+        meta.style.cursor = 'pointer'; meta.title = 'Preview content'
         meta.addEventListener('click', () => vscode.postMessage({ type: 'openAttachment', name: a.name, lang: a.lang, data: a.text }))
       }
       $attachments.appendChild(chip)
@@ -205,7 +205,7 @@
     const m = body.match(FILE_RE)
     if (m && body.indexOf('/') >= 0) {
       return '<code class="file-link" data-file="' + m[1] + '"' + (m[2] ? ' data-line="' + m[2] + '"' : '') +
-        ' title="Abrir no editor">' + body + '</code>'
+        ' title="Open in editor">' + body + '</code>'
     }
     return '<code>' + body + '</code>'
   }
@@ -273,11 +273,11 @@
         const cls = lang ? ' class="language-' + lang.toLowerCase() + '"' : ''
         out += '<div class="code-wrap" data-code="' + encodeURIComponent(body) + '">' +
           '<div class="code-bar">' +
-          '<span class="code-lang">' + escapeHtml(lang || 'código') + '</span>' +
+          '<span class="code-lang">' + escapeHtml(lang || 'code') + '</span>' +
           '<span class="code-acts">' +
-          '<button class="code-act" data-act="apply" title="Substituir a seleção (ou inserir no cursor)">Aplicar</button>' +
-          '<button class="code-act" data-act="insert" title="Inserir no cursor">Inserir</button>' +
-          '<button class="code-act" data-act="copy" title="Copiar">Copiar</button>' +
+          '<button class="code-act" data-act="apply" title="Replace the selection (or insert at the cursor)">Apply</button>' +
+          '<button class="code-act" data-act="insert" title="Insert at cursor">Insert</button>' +
+          '<button class="code-act" data-act="copy" title="Copy">Copy</button>' +
           '</span></div><pre><code' + cls + '>' + escapeHtml(body) + '</code></pre></div>'
       } else {
         out += renderText(parts[i])
@@ -310,7 +310,7 @@
       else if (part.type === 'image_url' && part.image_url) html += '<img class="att-img" src="' + part.image_url.url + '" alt="imagem" />'
       else if (part.type === 'file') {
         if (part.kind === 'image' && part.dataUrl) html += '<img class="att-img" src="' + part.dataUrl + '" alt="' + escapeHtml(part.name || '') + '" />'
-        else html += '<span class="file-tag">' + attIcon(part) + '<span class="att-name">' + escapeHtml(part.name || 'arquivo') + '</span>' + (part.note ? '<span class="att-sub">' + escapeHtml(part.note) + '</span>' : '') + '</span>'
+        else html += '<span class="file-tag">' + attIcon(part) + '<span class="att-name">' + escapeHtml(part.name || 'file') + '</span>' + (part.note ? '<span class="att-sub">' + escapeHtml(part.note) + '</span>' : '') + '</span>'
       }
     }
     return html
@@ -326,7 +326,7 @@
     el.appendChild(bubble)
     const tools = document.createElement('div')
     tools.className = 'msg-tools'
-    tools.innerHTML = '<button class="mtool copy" data-act="copy" title="Copiar">Copiar</button>'
+    tools.innerHTML = '<button class="mtool copy" data-act="copy" title="Copy">Copy</button>'
     el.appendChild(tools)
     $messages.appendChild(el)
     highlightIn(bubble)
@@ -343,8 +343,8 @@
       if (el.classList.contains('assistant')) lastA = el
       if (el.classList.contains('user')) lastU = el
     })
-    if (lastA) addTool(lastA, 'regen', 'Regenerar')
-    if (lastU) addTool(lastU, 'edit', 'Editar')
+    if (lastA) addTool(lastA, 'regen', 'Regenerate')
+    if (lastU) addTool(lastU, 'edit', 'Edit')
   }
   function addTool(msgEl, act, label) {
     const tools = msgEl.querySelector('.msg-tools')
@@ -360,7 +360,7 @@
   function setStreaming(on) {
     streaming = on
     $send.innerHTML = on ? STOP_SVG : SEND_SVG
-    $send.title = on ? 'Parar' : 'Enviar'
+    $send.title = on ? 'Stop' : 'Send'
     $input.disabled = false
   }
   setStreaming(false)
@@ -417,13 +417,13 @@
 
   // ── Comandos de barra (/) ────────────────────────────────────────────────
   const SLASH = [
-    { c: '/explain', d: 'Explicar o arquivo/seleção atual', p: 'Explique o código do arquivo atual de forma objetiva, em português.' },
-    { c: '/tests', d: 'Gerar testes', p: 'Gere testes para o código do arquivo atual.' },
-    { c: '/doc', d: 'Documentar o código', p: 'Documente o código do arquivo atual com comentários claros, em português.' },
-    { c: '/refactor', d: 'Refatorar mantendo o comportamento', p: 'Refatore o código do arquivo atual melhorando a legibilidade e mantendo o comportamento.' },
-    { c: '/fix', d: 'Corrigir problemas do arquivo', p: 'Corrija os problemas/erros do arquivo atual e explique as mudanças.' },
-    { c: '/export', d: 'Exportar conversa (Markdown)', a: 'export' },
-    { c: '/clear', d: 'Nova conversa', a: 'clear' },
+    { c: '/explain', d: 'Explain the current file/selection', p: 'Explain the code of the current file concisely.' },
+    { c: '/tests', d: 'Generate tests', p: 'Generate tests for the code of the current file.' },
+    { c: '/doc', d: 'Document the code', p: 'Document the code of the current file with clear comments.' },
+    { c: '/refactor', d: 'Refactor keeping behavior', p: 'Refactor the code of the current file, improving readability while keeping its behavior.' },
+    { c: '/fix', d: 'Fix file problems', p: 'Fix the problems/errors of the current file and explain the changes.' },
+    { c: '/export', d: 'Export conversation (Markdown)', a: 'export' },
+    { c: '/clear', d: 'New conversation', a: 'clear' },
   ]
   let slashIdx = 0
   function updateSlash() {
@@ -458,7 +458,7 @@
     pendingAtts = []
     renderCtxbar(); renderAttachment(); hideSlash()
     const logo = document.body.dataset.logo || ''
-    $messages.innerHTML = '<div class="empty">' + (logo ? '<img class="logo-img" src="' + logo + '" alt="Mangaba AI" />' : '') + '<p class="hint">Nova conversa.</p></div>'
+    $messages.innerHTML = '<div class="empty">' + (logo ? '<img class="logo-img" src="' + logo + '" alt="Mangaba AI" />' : '') + '<p class="hint">New conversation.</p></div>'
     $input.value = ''; setStreaming(false); curEl = null; autoresize(); updateTokens()
   }
 
@@ -472,7 +472,7 @@
     const lines = ['# Conversa Mangaba AI', '']
     for (const m of history) {
       if (m.role === 'system') continue
-      lines.push(m.role === 'user' ? '### Você' : '### Mangaba', '', msgText(m.content), '')
+      lines.push(m.role === 'user' ? '### You' : '### Mangaba', '', msgText(m.content), '')
     }
     if (lines.length <= 2) return
     vscode.postMessage({ type: 'exportMarkdown', data: lines.join('\n') })

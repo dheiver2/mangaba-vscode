@@ -57,7 +57,7 @@ class McpServer {
         if (msg.id != null && this.pending.has(msg.id)) {
           const p = this.pending.get(msg.id)!
           this.pending.delete(msg.id)
-          msg.error ? p.reject(new Error(msg.error.message || 'MCP erro')) : p.resolve(msg.result)
+          msg.error ? p.reject(new Error(msg.error.message || 'MCP error')) : p.resolve(msg.result)
         }
       } catch { /* linha parcial/ruído */ }
     }
@@ -65,7 +65,7 @@ class McpServer {
 
   async call(name: string, args: unknown): Promise<string> {
     const r = (await this.request('tools/call', { name, arguments: args })) as { content?: Array<{ type: string; text?: string }> }
-    return (r?.content ?? []).map((c) => (c.type === 'text' ? c.text : JSON.stringify(c))).join('\n') || '(sem saída)'
+    return (r?.content ?? []).map((c) => (c.type === 'text' ? c.text : JSON.stringify(c))).join('\n') || '(no output)'
   }
   stop() { this.proc?.kill() }
 }
@@ -88,10 +88,10 @@ export class McpManager {
     if (this.ctx && fingerprint !== approved) {
       const list = cfg.map((s) => `• ${s?.name}: ${s?.command} ${(s?.args ?? []).join(' ')}`).join('\n')
       const pick = await vscode.window.showWarningMessage(
-        `Mangaba: iniciar estes servidores MCP (executam processos na sua máquina)?\n\n${list}`,
-        { modal: true }, 'Permitir', 'Bloquear',
+        `Mangaba: start these MCP servers (they run processes on your machine)?\n\n${list}`,
+        { modal: true }, 'Allow', 'Block',
       )
-      if (pick !== 'Permitir') return
+      if (pick !== 'Allow') return
       await this.ctx.globalState.update('mangaba.mcpApproved', fingerprint)
     }
 
@@ -105,7 +105,7 @@ export class McpManager {
   tools(): McpTool[] { return this.servers.flatMap((s) => s.tools) }
   async call(server: string, name: string, args: unknown): Promise<string> {
     const s = this.servers.find((x) => x.name === server)
-    if (!s) throw new Error('MCP server não encontrado: ' + server)
+    if (!s) throw new Error('MCP server not found: ' + server)
     return s.call(name, args)
   }
   dispose() { this.servers.forEach((s) => s.stop()); this.servers = []; this.started = false }
