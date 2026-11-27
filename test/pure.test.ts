@@ -99,7 +99,7 @@ test('redactSecrets: chave privada PEM', () => {
   const pem = '-----BEGIN RSA PRIVATE KEY-----\nMIIEow...\n-----END RSA PRIVATE KEY-----'
   const { text } = redactSecrets('antes\n' + pem + '\ndepois')
   assert.ok(!text.includes('MIIEow'))
-  assert.ok(text.includes('[CHAVE PRIVADA REDIGIDA]'))
+  assert.ok(text.includes('[PRIVATE KEY REDACTED]'))
 })
 
 test('redactSecrets: código normal fica intacto', () => {

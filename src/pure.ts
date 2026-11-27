@@ -44,7 +44,7 @@ export function safeRelPath(rel: string): string | null {
 
 // Padrões de segredos comuns (chaves de nuvem, tokens, chaves privadas, senhas em env).
 const SECRET_PATTERNS: Array<[RegExp, string]> = [
-  [/-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g, '[CHAVE PRIVADA REDIGIDA]'],
+  [/-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g, '[PRIVATE KEY REDACTED]'],
   [/\b(AKIA|ASIA)[0-9A-Z]{16}\b/g, '[AWS_KEY_REDIGIDA]'],
   [/\bgh[pousr]_[A-Za-z0-9]{20,}\b/g, '[GITHUB_TOKEN_REDIGIDO]'],
   [/\bsk-[A-Za-z0-9_-]{20,}\b/g, '[API_KEY_REDIGIDA]'],
